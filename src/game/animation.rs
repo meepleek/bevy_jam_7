@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::prelude::*;
 use std::time::Duration;
 
-use crate::{AppSystems, PausableSystems, audio::sound_effect, demo::player::PlayerAssets};
+use crate::{AppSystems, PausableSystems, audio::sound_effect, game::player::PlayerAssets};
 
 pub(super) fn plugin(app: &mut App) {
     // Animate and play sound effects based on controls.

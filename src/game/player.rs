@@ -7,12 +7,12 @@ use bevy::{
 use bevy_enhanced_input::{
     action::Action,
     actions,
-    prelude::{Axial, Bindings, Cardinal, DeadZone, DeltaScale, SmoothNudge},
+    prelude::{Axial, Bindings, Cardinal, DeadZone, DeltaScale},
 };
 
 use crate::{
     asset_tracking::LoadResource,
-    demo::{
+    game::{
         animation::PlayerAnimation,
         movement::{MovementController, MovementIntent, PlayerInputCtx},
     },
