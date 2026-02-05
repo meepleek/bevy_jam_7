@@ -6,13 +6,16 @@ edition = "2024"
 
 [dependencies]
 bevy = { version = "0.18" }
+bevy-inspector-egui = "0.36.0"
+bevy_trauma_shake = { git = "https://github.com/meepleek/bevy_trauma_shake", rev = "1b0f784" }
+#noiz = "0.4.0"
 rand = "0.9"
 # Compile out low-severity logs to improve performance.
 # Remove these features if you want to profile your game with tracy.
 # (see <https://github.com/bevyengine/bevy/blob/main/docs/profiling.md#tracy-profiler>)
 tracing = { version = "0.1", features = [
-    "max_level_debug",
-    "release_max_level_warn",
+  "max_level_debug",
+  "release_max_level_warn",
 ] }
 
 [target.wasm32-unknown-unknown.dependencies]
@@ -22,19 +25,19 @@ getrandom = { version = "0.3", features = ["wasm_js"] }
 # Default to a native dev build.
 default = ["dev_native"]
 dev = [
-    # Improve compile times for dev builds by linking Bevy as a dynamic library.
-    "bevy/dynamic_linking",
-    "bevy/bevy_dev_tools",
-    "bevy/bevy_ui_debug",
-    # Improve error messages coming from Bevy
-    "bevy/track_location",
+  # Improve compile times for dev builds by linking Bevy as a dynamic library.
+  "bevy/dynamic_linking",
+  "bevy/bevy_dev_tools",
+  "bevy/bevy_ui_debug",
+  # Improve error messages coming from Bevy
+  "bevy/track_location",
 ]
 dev_native = [
-    "dev",
-    # Enable asset hot reloading for native dev builds.
-    "bevy/file_watcher",
-    # Enable embedded asset hot reloading for native dev builds.
-    "bevy/embedded_watcher",
+  "dev",
+  # Enable asset hot reloading for native dev builds.
+  "bevy/file_watcher",
+  # Enable embedded asset hot reloading for native dev builds.
+  "bevy/embedded_watcher",
 ]
 
 
