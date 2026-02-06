@@ -9,6 +9,7 @@ mod cam;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod game;
+mod input;
 mod menus;
 mod screens;
 mod theme;
@@ -50,6 +51,7 @@ impl Plugin for AppPlugin {
             audio::plugin,
             cam::plugin,
             game::plugin,
+            input::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,

@@ -5,23 +5,16 @@
 use bevy::prelude::*;
 use bevy_enhanced_input::prelude::*;
 
+use crate::input::player::MovementIntent;
+
 // use crate::{AppSystems, PausableSystems};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins(EnhancedInputPlugin)
-        .add_input_context::<PlayerInputCtx>()
-        .add_observer(
-            apply_movement, // .in_set(AppSystems::Update)
-                            // .in_set(PausableSystems),
-        );
+    app.add_observer(
+        apply_movement, // .in_set(AppSystems::Update)
+                        // .in_set(PausableSystems),
+    );
 }
-
-#[derive(Component)]
-pub struct PlayerInputCtx;
-
-#[derive(InputAction)]
-#[action_output(Vec2)]
-pub struct MovementIntent;
 
 /// These are the movement parameters for our character controller.
 /// For now, this is only used for a single player, but it could power NPCs or
