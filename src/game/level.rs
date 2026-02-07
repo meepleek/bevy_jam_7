@@ -1,16 +1,18 @@
-//! Spawn the main level.
-
 use bevy::prelude::*;
 
 use crate::{
     asset_tracking::LoadResource,
     audio::music,
-    game::player::{PlayerAssets, player},
-    screens::Screen,
+    game::{
+        GameplayPhase,
+        pause::Gameplay,
+        player::{PlayerAssets, player},
+    },
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.load_resource::<LevelAssets>();
+    app.load_resource::<LevelAssets>()
+        .add_systems(OnEnter(GameplayPhase::LevelSpawn), spawn_level);
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -35,12 +37,13 @@ pub fn spawn_level(
     level_assets: Res<LevelAssets>,
     player_assets: Res<PlayerAssets>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut next_phase: ResMut<NextState<GameplayPhase>>,
 ) {
     commands.spawn((
         Name::new("Level"),
         Transform::default(),
         Visibility::default(),
-        DespawnOnExit(Screen::Gameplay),
+        DespawnOnExit(Gameplay),
         children![
             player(400.0, &player_assets, &mut texture_atlas_layouts),
             (
@@ -49,4 +52,5 @@ pub fn spawn_level(
             )
         ],
     ));
+    next_phase.set(GameplayPhase::Gameplay);
 }

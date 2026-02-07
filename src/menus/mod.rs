@@ -25,5 +25,4 @@ pub enum Menu {
     Main,
     Credits,
     Settings,
-    Pause,
 }

@@ -116,17 +116,25 @@ fn go_back_on_click(
     screen: Res<State<Screen>>,
     mut next_menu: ResMut<NextState<Menu>>,
 ) {
-    next_menu.set(if screen.get() == &Screen::Title {
-        Menu::Main
-    } else {
-        Menu::Pause
-    });
+    if screen.get() == &Screen::Title {
+        next_menu.set(Menu::Main);
+    }
+
+    // next_menu.set(if screen.get() == &Screen::Title {
+    //     Menu::Main
+    // } else {
+    //     Menu::Pause
+    // });
 }
 
 fn go_back(screen: Res<State<Screen>>, mut next_menu: ResMut<NextState<Menu>>) {
-    next_menu.set(if screen.get() == &Screen::Title {
-        Menu::Main
-    } else {
-        Menu::Pause
-    });
+    if screen.get() == &Screen::Title {
+        next_menu.set(Menu::Main);
+    }
+
+    // next_menu.set(if screen.get() == &Screen::Title {
+    //     Menu::Main
+    // } else {
+    //     Menu::Pause
+    // });
 }
