@@ -1,12 +1,16 @@
 use bevy::prelude::*;
 
-use crate::{asset_tracking::LoadResource, audio::sound_effect};
+use crate::{
+    asset_tracking::LoadResource,
+    audio::sound_effect,
+    input::focus::{FocusInteraction, UiFocus},
+};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_observer(apply_interaction_palette_on_click);
-    app.add_observer(apply_interaction_palette_on_over);
-    app.add_observer(apply_interaction_palette_on_out);
-
+    app.add_systems(
+        Update,
+        handle_ui_focus_change.run_if(resource_exists_and_changed::<UiFocus>),
+    );
     app.load_resource::<InteractionAssets>();
     app.add_observer(play_sound_effect_on_click);
     app.add_observer(play_sound_effect_on_over);
@@ -19,41 +23,55 @@ pub(super) fn plugin(app: &mut App) {
 #[reflect(Component)]
 pub struct InteractionPalette {
     pub none: Color,
-    pub hovered: Color,
     pub pressed: Color,
+    pub focused: Color,
+}
+impl InteractionPalette {
+    pub fn focus_interaction_color(&self, interaction: FocusInteraction) -> Color {
+        match interaction {
+            FocusInteraction::Focus => self.focused,
+            FocusInteraction::Click => self.pressed,
+        }
+    }
 }
 
-fn apply_interaction_palette_on_click(
-    click: On<Pointer<Click>>,
-    mut palette_query: Query<(&InteractionPalette, &mut BackgroundColor)>,
+fn handle_ui_focus_change(
+    focus: Res<UiFocus>,
+    child_q: Query<&Children>,
+    mut palette_q: Query<(&InteractionPalette, &mut BackgroundColor)>,
 ) {
-    let Ok((palette, mut bg)) = palette_query.get_mut(click.event_target()) else {
-        return;
-    };
+    if let Some(focus_state) = focus.focus()
+        && let Some(palette_e) =
+            get_palette_components_descendant(&child_q, &mut palette_q, focus_state.entity)
+        && let Ok((palette, mut bg)) = palette_q.get_mut(palette_e)
+    {
+        *bg = palette
+            .focus_interaction_color(focus_state.interaction)
+            .into();
+    }
 
-    *bg = palette.pressed.into();
-}
+    if let Some(previous_e) = focus.previous()
+        && let Some(palette_e) =
+            get_palette_components_descendant(&child_q, &mut palette_q, previous_e)
+        && let Ok((palette, mut bg)) = palette_q.get_mut(palette_e)
+    {
+        *bg = palette.none.into();
+    }
 
-fn apply_interaction_palette_on_over(
-    over: On<Pointer<Over>>,
-    mut palette_query: Query<(&InteractionPalette, &mut BackgroundColor)>,
-) {
-    let Ok((palette, mut bg)) = palette_query.get_mut(over.event_target()) else {
-        return;
-    };
+    fn get_palette_components_descendant(
+        child_q: &Query<&Children>,
+        palette_q: &mut Query<(&InteractionPalette, &mut BackgroundColor)>,
+        entity: Entity,
+    ) -> Option<Entity> {
+        // todo: is this needed?
+        if palette_q.contains(entity) {
+            return Some(entity);
+        }
 
-    *bg = palette.hovered.into();
-}
-
-fn apply_interaction_palette_on_out(
-    out: On<Pointer<Out>>,
-    mut palette_query: Query<(&InteractionPalette, &mut BackgroundColor)>,
-) {
-    let Ok((palette, mut bg)) = palette_query.get_mut(out.event_target()) else {
-        return;
-    };
-
-    *bg = palette.none.into();
+        child_q
+            .iter_descendants(entity)
+            .find(|e| palette_q.contains(*e))
+    }
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]

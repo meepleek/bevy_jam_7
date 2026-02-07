@@ -4,7 +4,7 @@
 
 use bevy::{audio::Volume, input::common_conditions::input_just_pressed, prelude::*};
 
-use crate::{menus::Menu, screens::Screen, theme::prelude::*};
+use crate::{input::menu::ButtonClick, menus::Menu, screens::Screen, theme::prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Settings), spawn_settings_menu);
@@ -104,7 +104,7 @@ fn update_global_volume_label(
 }
 
 fn go_back_on_click(
-    _: On<Pointer<Click>>,
+    _: On<ButtonClick>,
     screen: Res<State<Screen>>,
     mut next_menu: ResMut<NextState<Menu>>,
 ) {
