@@ -37,13 +37,10 @@ impl InteractionPalette {
 
 fn handle_ui_focus_change(
     focus: Res<UiFocus>,
-    child_q: Query<&Children>,
     mut palette_q: Query<(&InteractionPalette, &mut BackgroundColor)>,
 ) {
     if let Some(focus_state) = focus.focus()
-        && let Some(palette_e) =
-            get_palette_components_descendant(&child_q, &mut palette_q, focus_state.entity)
-        && let Ok((palette, mut bg)) = palette_q.get_mut(palette_e)
+        && let Ok((palette, mut bg)) = palette_q.get_mut(focus_state.entity)
     {
         *bg = palette
             .focus_interaction_color(focus_state.interaction)
@@ -51,26 +48,9 @@ fn handle_ui_focus_change(
     }
 
     if let Some(previous_e) = focus.previous()
-        && let Some(palette_e) =
-            get_palette_components_descendant(&child_q, &mut palette_q, previous_e)
-        && let Ok((palette, mut bg)) = palette_q.get_mut(palette_e)
+        && let Ok((palette, mut bg)) = palette_q.get_mut(previous_e)
     {
         *bg = palette.none.into();
-    }
-
-    fn get_palette_components_descendant(
-        child_q: &Query<&Children>,
-        palette_q: &mut Query<(&InteractionPalette, &mut BackgroundColor)>,
-        entity: Entity,
-    ) -> Option<Entity> {
-        // todo: is this needed?
-        if palette_q.contains(entity) {
-            return Some(entity);
-        }
-
-        child_q
-            .iter_descendants(entity)
-            .find(|e| palette_q.contains(*e))
     }
 }
 

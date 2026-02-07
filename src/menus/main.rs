@@ -4,7 +4,7 @@ use bevy::{input_focus::AutoFocus, prelude::*};
 
 use crate::{
     asset_tracking::ResourceHandles,
-    input::menu::{ButtonClick, menu_input},
+    input::menu::{ButtonClick, LoopingMenu, menu_input},
     menus::Menu,
     screens::Screen,
     theme::widget,
@@ -18,6 +18,7 @@ fn spawn_main_menu(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Main Menu"),
         GlobalZIndex(2),
+        LoopingMenu,
         DespawnOnExit(Menu::Main),
         #[cfg(not(target_family = "wasm"))]
         children![

@@ -2,9 +2,16 @@
 //!
 //! Additional settings and accessibility options should go here.
 
-use bevy::{audio::Volume, input::common_conditions::input_just_pressed, prelude::*};
+use bevy::{
+    audio::Volume, input::common_conditions::input_just_pressed, input_focus::AutoFocus, prelude::*,
+};
 
-use crate::{input::menu::ButtonClick, menus::Menu, screens::Screen, theme::prelude::*};
+use crate::{
+    input::menu::{ButtonClick, LoopingMenu},
+    menus::Menu,
+    screens::Screen,
+    theme::prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Settings), spawn_settings_menu);
@@ -23,11 +30,12 @@ fn spawn_settings_menu(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Settings Menu"),
         GlobalZIndex(2),
+        LoopingMenu,
         DespawnOnExit(Menu::Settings),
         children![
             widget::header("Settings"),
             settings_grid(),
-            widget::button("Back", go_back_on_click),
+            (widget::button("Back", go_back_on_click), AutoFocus),
         ],
     ));
 }

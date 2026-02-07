@@ -1,9 +1,15 @@
 //! The credits menu.
 
-use bevy::{ecs::spawn::SpawnIter, input::common_conditions::input_just_pressed, prelude::*};
+use bevy::{
+    ecs::spawn::SpawnIter, input::common_conditions::input_just_pressed, input_focus::AutoFocus,
+    prelude::*,
+};
 
 use crate::{
-    asset_tracking::LoadResource, audio::music, input::menu::ButtonClick, menus::Menu,
+    asset_tracking::LoadResource,
+    audio::music,
+    input::menu::{ButtonClick, LoopingMenu},
+    menus::Menu,
     theme::prelude::*,
 };
 
@@ -22,13 +28,14 @@ fn spawn_credits_menu(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Credits Menu"),
         GlobalZIndex(2),
+        LoopingMenu,
         DespawnOnExit(Menu::Credits),
         children![
             widget::header("Created by"),
             created_by(),
             widget::header("Assets"),
             assets(),
-            widget::button("Back", go_back_on_click),
+            (widget::button("Back", go_back_on_click), AutoFocus),
         ],
     ));
 }
