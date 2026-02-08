@@ -54,14 +54,16 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 - high-temp? (would need some cards/synergies)
     - free movement cards at high temp?
 
-### Card uses
+### Cards
+
+#### Card uses
 
 - main effect
     - cost - usually temp raise
 - discard (not all cards)
 - trash (not all cards)
 
-### Card types
+#### Card types
 
 - temp 2-3
     - lower
@@ -93,7 +95,21 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 - holes
     - make a hole & trash 1 card
 
-### Start deck (default character at least)
+#### Inspo matrix
+
+| xxxxxxxxx | temp | move | attack | lob | pull/push | income | explosion | holes | draw |
+| --------- | ---- | ---- | ------ | --- | --------- | ------ | --------- | ----- | ---- |
+| temp      |      |      |        |     |           |        |           |       |      |
+| move      |      |      |        |     |           |        |           |       |      |
+| attack    |      |      |        |     |           |        |           |       |      |
+| lob       |      |      |        |     |           |        |           |       |      |
+| pull/push |      |      |        |     |           |        |           |       |      |
+| income    |      |      |        |     |           |        |           |       |      |
+| explosion |      |      |        |     |           |        |           |       |      |
+| holes     |      |      |        |     |           |        |           |       |      |
+| draw      |      |      |        |     |           |        |           |       |      |
+
+#### Start deck (default character at least)
 
 - movement, close-range attacks, temp +1 x 2, temp -2
 - might differ for other characters
@@ -106,6 +122,29 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 - +1 to hand size
 - explosion immunity
 - -1 temp cost for movement cards at min temp
+
+### Enemies
+
+- enemies attack only when the player is in range
+
+### Types
+
+- short range (all neigbour tiles)
+- range 3 diag/ortho
+- lobbing
+- explosive enemies that rush the player
+- enemies that change temp
+- enemies that add temp/junk cards
+
+#### Inspo matrix
+
+| xxxxxxxxx | direct | lob | explosive | temp | junk |
+| --------- | ------ | --- | --------- | ---- | ---- |
+| direct    |        |     |           |      |      |
+| lob       |        |     |           |      |      |
+| explosive |        |     |           |      |      |
+| temp      |        |     |           |      |      |
+| junk      |        |     |           |      |      |
 
 ### To consider
 
