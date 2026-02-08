@@ -8,21 +8,24 @@ use bevy::{
 
 use crate::{
     input::menu::{ButtonClick, LoopingMenu},
-    menus::Menu,
-    screens::Screen,
+    screens::{MainMenuState, PauseState, Screen},
     theme::prelude::*,
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Menu::Settings), spawn_settings_menu);
     app.add_systems(
-        Update,
-        go_back.run_if(in_state(Menu::Settings).and(input_just_pressed(KeyCode::Escape))),
+        OnEnter(Screen::MainMenu(MainMenuState::Settings)),
+        spawn_settings_menu,
+    )
+    .add_systems(
+        OnEnter(Screen::Gameplay {
+            pause: Some(PauseState::Settings),
+        }),
+        spawn_settings_menu,
     );
-
     app.add_systems(
         Update,
-        update_global_volume_label.run_if(in_state(Menu::Settings)),
+        update_global_volume_label.run_if(in_state(Screen::MainMenu(MainMenuState::Settings))),
     );
 }
 
@@ -31,7 +34,7 @@ fn spawn_settings_menu(mut commands: Commands) {
         widget::ui_root("Settings Menu"),
         GlobalZIndex(2),
         LoopingMenu,
-        DespawnOnExit(Menu::Settings),
+        DespawnOnExit(Screen::MainMenu(MainMenuState::Settings)),
         children![
             widget::header("Settings"),
             settings_grid(),
@@ -114,27 +117,17 @@ fn update_global_volume_label(
 fn go_back_on_click(
     _: On<ButtonClick>,
     screen: Res<State<Screen>>,
-    mut next_menu: ResMut<NextState<Menu>>,
+    next: ResMut<NextState<Screen>>,
 ) {
-    if screen.get() == &Screen::Title {
-        next_menu.set(Menu::Main);
-    }
-
-    // next_menu.set(if screen.get() == &Screen::Title {
-    //     Menu::Main
-    // } else {
-    //     Menu::Pause
-    // });
+    go_back(screen, next);
 }
 
-fn go_back(screen: Res<State<Screen>>, mut next_menu: ResMut<NextState<Menu>>) {
-    if screen.get() == &Screen::Title {
-        next_menu.set(Menu::Main);
+fn go_back(screen: Res<State<Screen>>, mut next: ResMut<NextState<Screen>>) {
+    match screen.get() {
+        Screen::MainMenu(main_menu_state) if main_menu_state != &MainMenuState::Title => {
+            next.set(Screen::title())
+        }
+        Screen::Gameplay { pause: Some(_) } => next.set(Screen::paused()),
+        _ => warn!("Invalid state to go back from"),
     }
-
-    // next_menu.set(if screen.get() == &Screen::Title {
-    //     Menu::Main
-    // } else {
-    //     Menu::Pause
-    // });
 }

@@ -8,6 +8,13 @@ pub(super) fn plugin(app: &mut App) {
         .add_computed_state::<Playing>();
 }
 
+#[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
+pub enum PauseState {
+    #[default]
+    Pause,
+    Settings,
+}
+
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Gameplay;
 impl ComputedStates for Gameplay {
@@ -28,7 +35,7 @@ impl ComputedStates for Paused {
 
     fn compute(screen: Screen) -> Option<Self> {
         match screen {
-            Screen::Gameplay { paused: true } => Some(Paused),
+            Screen::Gameplay { pause: Some(_) } => Some(Paused),
             _ => None,
         }
     }
@@ -41,7 +48,7 @@ impl ComputedStates for Playing {
 
     fn compute(screen: Screen) -> Option<Self> {
         match screen {
-            Screen::Gameplay { paused: false } => Some(Playing),
+            Screen::Gameplay { pause: None } => Some(Playing),
             _ => None,
         }
     }

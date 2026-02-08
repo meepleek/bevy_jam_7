@@ -9,19 +9,28 @@ use crate::{
     asset_tracking::LoadResource,
     audio::music,
     input::menu::{ButtonClick, LoopingMenu},
-    menus::Menu,
+    screens::{MainMenuState, Screen},
     theme::prelude::*,
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Menu::Credits), spawn_credits_menu);
+    app.add_systems(
+        OnEnter(Screen::MainMenu(MainMenuState::Credits)),
+        spawn_credits_menu,
+    );
     app.add_systems(
         Update,
-        go_back.run_if(in_state(Menu::Credits).and(input_just_pressed(KeyCode::Escape))),
+        go_back.run_if(
+            in_state(Screen::MainMenu(MainMenuState::Credits))
+                .and(input_just_pressed(KeyCode::Escape)),
+        ),
     );
 
     app.load_resource::<CreditsAssets>();
-    app.add_systems(OnEnter(Menu::Credits), start_credits_music);
+    app.add_systems(
+        OnEnter(Screen::MainMenu(MainMenuState::Credits)),
+        start_credits_music,
+    );
 }
 
 fn spawn_credits_menu(mut commands: Commands) {
@@ -29,7 +38,7 @@ fn spawn_credits_menu(mut commands: Commands) {
         widget::ui_root("Credits Menu"),
         GlobalZIndex(2),
         LoopingMenu,
-        DespawnOnExit(Menu::Credits),
+        DespawnOnExit(Screen::MainMenu(MainMenuState::Credits)),
         children![
             widget::header("Created by"),
             created_by(),
@@ -87,12 +96,12 @@ fn grid(content: Vec<[&'static str; 2]>) -> impl Bundle {
     )
 }
 
-fn go_back_on_click(_: On<ButtonClick>, mut next_menu: ResMut<NextState<Menu>>) {
-    next_menu.set(Menu::Main);
+fn go_back_on_click(_: On<ButtonClick>, mut next: ResMut<NextState<Screen>>) {
+    next.set(Screen::title());
 }
 
-fn go_back(mut next_menu: ResMut<NextState<Menu>>) {
-    next_menu.set(Menu::Main);
+fn go_back(mut next: ResMut<NextState<Screen>>) {
+    next.set(Screen::title());
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -114,7 +123,7 @@ impl FromWorld for CreditsAssets {
 fn start_credits_music(mut commands: Commands, credits_music: Res<CreditsAssets>) {
     commands.spawn((
         Name::new("Credits Music"),
-        DespawnOnExit(Menu::Credits),
+        DespawnOnExit(Screen::MainMenu(MainMenuState::Credits)),
         music(credits_music.music.clone()),
     ));
 }

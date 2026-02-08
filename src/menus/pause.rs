@@ -3,13 +3,15 @@ use bevy::{input_focus::AutoFocus, prelude::*};
 use crate::{
     game::pause::Paused,
     input::menu::{ButtonClick, LoopingMenu, menu_input},
-    menus::Menu,
-    screens::Screen,
+    screens::{PauseState, Screen},
     theme::widget,
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Paused), (spawn_pause_overlay, spawn_pause_menu));
+    app.add_systems(
+        OnEnter(Screen::paused()),
+        (spawn_pause_overlay, spawn_pause_menu),
+    );
 }
 
 fn pause_overlay() -> impl Bundle {
@@ -35,7 +37,7 @@ fn spawn_pause_menu(mut commands: Commands) {
         widget::ui_root("Pause Menu"),
         GlobalZIndex(2),
         LoopingMenu,
-        DespawnOnExit(Paused),
+        DespawnOnExit(Screen::paused()),
         children![
             widget::header("Game paused"),
             (widget::button("Continue", close_menu), AutoFocus),
@@ -46,8 +48,10 @@ fn spawn_pause_menu(mut commands: Commands) {
     ));
 }
 
-fn open_settings_menu(_: On<ButtonClick>, mut next_menu: ResMut<NextState<Menu>>) {
-    next_menu.set(Menu::Settings);
+fn open_settings_menu(_: On<ButtonClick>, mut next: ResMut<NextState<Screen>>) {
+    next.set(Screen::Gameplay {
+        pause: Some(PauseState::Settings),
+    });
 }
 
 fn close_menu(_: On<ButtonClick>, mut next: ResMut<NextState<Screen>>) {
@@ -55,5 +59,5 @@ fn close_menu(_: On<ButtonClick>, mut next: ResMut<NextState<Screen>>) {
 }
 
 fn quit_to_title(_: On<ButtonClick>, mut next_screen: ResMut<NextState<Screen>>) {
-    next_screen.set(Screen::Title);
+    next_screen.set(Screen::title());
 }
