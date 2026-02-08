@@ -8,6 +8,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_computed_state::<Playing>();
 }
 
+#[allow(dead_code)] // todo: actually why is this considered dead?
 #[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub enum PauseState {
     #[default]
