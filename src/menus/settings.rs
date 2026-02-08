@@ -2,9 +2,7 @@
 //!
 //! Additional settings and accessibility options should go here.
 
-use bevy::{
-    audio::Volume, input::common_conditions::input_just_pressed, input_focus::AutoFocus, prelude::*,
-};
+use bevy::{audio::Volume, input_focus::AutoFocus, prelude::*};
 
 use crate::{
     input::menu::{ButtonClick, LoopingMenu},
@@ -15,13 +13,15 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         OnEnter(Screen::MainMenu(MainMenuState::Settings)),
-        spawn_settings_menu,
+        spawn_settings_menu(Screen::MainMenu(MainMenuState::Settings)),
     )
     .add_systems(
         OnEnter(Screen::Gameplay {
             pause: Some(PauseState::Settings),
         }),
-        spawn_settings_menu,
+        spawn_settings_menu(Screen::Gameplay {
+            pause: Some(PauseState::Settings),
+        }),
     );
     app.add_systems(
         Update,
@@ -29,18 +29,20 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-fn spawn_settings_menu(mut commands: Commands) {
-    commands.spawn((
-        widget::ui_root("Settings Menu"),
-        GlobalZIndex(2),
-        LoopingMenu,
-        DespawnOnExit(Screen::MainMenu(MainMenuState::Settings)),
-        children![
-            widget::header("Settings"),
-            settings_grid(),
-            (widget::button("Back", go_back_on_click), AutoFocus),
-        ],
-    ));
+fn spawn_settings_menu(despawn_state: Screen) -> impl FnMut(Commands) {
+    move |mut commands| {
+        commands.spawn((
+            widget::ui_root("Settings Menu"),
+            GlobalZIndex(2),
+            LoopingMenu,
+            DespawnOnExit(despawn_state),
+            children![
+                widget::header("Settings"),
+                settings_grid(),
+                (widget::button("Back", go_back_on_click), AutoFocus),
+            ],
+        ));
+    }
 }
 
 fn settings_grid() -> impl Bundle {
