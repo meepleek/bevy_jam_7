@@ -8,15 +8,20 @@ use crate::{
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(
-        OnEnter(Screen::paused()),
-        (spawn_pause_overlay, spawn_pause_menu),
-    );
+    app.add_systems(OnEnter(Screen::paused()), spawn_pause_menu)
+        .add_systems(
+            OnEnter(Screen::paused()),
+            spawn_pause_overlay.run_if(not(any_with_component::<PauseOverlay>)),
+        );
 }
+
+#[derive(Component)]
+struct PauseOverlay;
 
 fn pause_overlay() -> impl Bundle {
     (
         Name::new("Pause Overlay"),
+        PauseOverlay,
         Node {
             width: percent(100),
             height: percent(100),
