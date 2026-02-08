@@ -2,34 +2,47 @@
 //!
 //! Additional settings and accessibility options should go here.
 
-use bevy::{audio::Volume, input::common_conditions::input_just_pressed, prelude::*};
+use bevy::{audio::Volume, input_focus::AutoFocus, prelude::*};
 
-use crate::{menus::Menu, screens::Screen, theme::prelude::*};
+use crate::{
+    input::menu::{ButtonClick, LoopingMenu},
+    screens::{MainMenuState, PauseState, Screen},
+    theme::prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Menu::Settings), spawn_settings_menu);
     app.add_systems(
-        Update,
-        go_back.run_if(in_state(Menu::Settings).and(input_just_pressed(KeyCode::Escape))),
+        OnEnter(Screen::MainMenu(MainMenuState::Settings)),
+        spawn_settings_menu(Screen::MainMenu(MainMenuState::Settings)),
+    )
+    .add_systems(
+        OnEnter(Screen::Gameplay {
+            pause: Some(PauseState::Settings),
+        }),
+        spawn_settings_menu(Screen::Gameplay {
+            pause: Some(PauseState::Settings),
+        }),
     );
-
     app.add_systems(
         Update,
-        update_global_volume_label.run_if(in_state(Menu::Settings)),
+        update_global_volume_label.run_if(in_state(Screen::MainMenu(MainMenuState::Settings))),
     );
 }
 
-fn spawn_settings_menu(mut commands: Commands) {
-    commands.spawn((
-        widget::ui_root("Settings Menu"),
-        GlobalZIndex(2),
-        DespawnOnExit(Menu::Settings),
-        children![
-            widget::header("Settings"),
-            settings_grid(),
-            widget::button("Back", go_back_on_click),
-        ],
-    ));
+fn spawn_settings_menu(despawn_state: Screen) -> impl FnMut(Commands) {
+    move |mut commands| {
+        commands.spawn((
+            widget::ui_root("Settings Menu"),
+            GlobalZIndex(2),
+            LoopingMenu,
+            DespawnOnExit(despawn_state),
+            children![
+                widget::header("Settings"),
+                settings_grid(),
+                (widget::button("Back", go_back_on_click), AutoFocus),
+            ],
+        ));
+    }
 }
 
 fn settings_grid() -> impl Bundle {
@@ -104,21 +117,19 @@ fn update_global_volume_label(
 }
 
 fn go_back_on_click(
-    _: On<Pointer<Click>>,
+    _: On<ButtonClick>,
     screen: Res<State<Screen>>,
-    mut next_menu: ResMut<NextState<Menu>>,
+    next: ResMut<NextState<Screen>>,
 ) {
-    next_menu.set(if screen.get() == &Screen::Title {
-        Menu::Main
-    } else {
-        Menu::Pause
-    });
+    go_back(screen, next);
 }
 
-fn go_back(screen: Res<State<Screen>>, mut next_menu: ResMut<NextState<Menu>>) {
-    next_menu.set(if screen.get() == &Screen::Title {
-        Menu::Main
-    } else {
-        Menu::Pause
-    });
+fn go_back(screen: Res<State<Screen>>, mut next: ResMut<NextState<Screen>>) {
+    match screen.get() {
+        Screen::MainMenu(main_menu_state) if main_menu_state != &MainMenuState::Title => {
+            next.set(Screen::title())
+        }
+        Screen::Gameplay { pause: Some(_) } => next.set(Screen::paused()),
+        _ => warn!("Invalid state to go back from"),
+    }
 }

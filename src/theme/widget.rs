@@ -3,11 +3,14 @@
 use std::borrow::Cow;
 
 use bevy::{
-    ecs::{spawn::SpawnWith, system::IntoObserverSystem},
-    prelude::*,
+    ecs::system::IntoObserverSystem, prelude::*,
+    ui::auto_directional_navigation::AutoDirectionalNavigation,
 };
 
-use crate::theme::{interaction::InteractionPalette, palette::*};
+use crate::{
+    theme::{interaction::InteractionPalette, palette::*},
+    utils::bundle_effect::BundleEffect,
+};
 
 /// A root UI node that fills the window and centers its content.
 pub fn ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
@@ -104,29 +107,25 @@ where
     let action = IntoObserverSystem::into_system(action);
     (
         Name::new("Button"),
-        Node::default(),
-        Children::spawn(SpawnWith(|parent: &mut ChildSpawner| {
-            parent
-                .spawn((
-                    Name::new("Button Inner"),
-                    Button,
-                    BackgroundColor(BUTTON_BACKGROUND),
-                    InteractionPalette {
-                        none: BUTTON_BACKGROUND,
-                        hovered: BUTTON_HOVERED_BACKGROUND,
-                        pressed: BUTTON_PRESSED_BACKGROUND,
-                    },
-                    children![(
-                        Name::new("Button Text"),
-                        Text(text),
-                        TextFont::from_font_size(40.0),
-                        TextColor(BUTTON_TEXT),
-                        // Don't bubble picking events from the text up to the button.
-                        Pickable::IGNORE,
-                    )],
-                ))
-                .insert(button_bundle)
-                .observe(action);
-        })),
+        Button,
+        AutoDirectionalNavigation::default(),
+        BackgroundColor(BUTTON_BACKGROUND),
+        InteractionPalette {
+            none: BUTTON_BACKGROUND,
+            pressed: BUTTON_PRESSED_BACKGROUND,
+            focused: BUTTON_FOCUSED_BACKGROUND,
+        },
+        button_bundle,
+        BundleEffect::new(|e_cmd| {
+            e_cmd.observe(action);
+        }),
+        children![(
+            Name::new("Button Text"),
+            Text(text),
+            TextFont::from_font_size(40.0),
+            TextColor(BUTTON_TEXT),
+            // Don't bubble picking events from the text up to the button.
+            Pickable::IGNORE,
+        )],
     )
 }

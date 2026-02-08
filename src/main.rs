@@ -6,14 +6,18 @@
 mod asset_tracking;
 mod audio;
 mod cam;
-mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod game;
+mod input;
 mod menus;
 mod screens;
 mod theme;
+mod utils;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
+
+use crate::game::pause::Playing;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -49,12 +53,14 @@ impl Plugin for AppPlugin {
             asset_tracking::plugin,
             audio::plugin,
             cam::plugin,
-            demo::plugin,
+            game::plugin,
+            input::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,
             screens::plugin,
             theme::plugin,
+            utils::plugin,
         ));
 
         // Order new `AppSystems` variants by adding them here:
@@ -68,9 +74,7 @@ impl Plugin for AppPlugin {
                 .chain(),
         );
 
-        // Set up the `Pause` state.
-        app.init_state::<Pause>();
-        app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
+        app.configure_sets(Update, PausableSystems.run_if(in_state(Playing)));
     }
 }
 
@@ -86,10 +90,6 @@ enum AppSystems {
     /// Do everything else (consider splitting this into further variants).
     Update,
 }
-
-/// Whether or not the game is paused.
-#[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
-struct Pause(pub bool);
 
 /// A system set for systems that shouldn't run while the game is paused.
 #[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
