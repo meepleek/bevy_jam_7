@@ -25,17 +25,17 @@ impl TileActionCommon for CardActionTrigger {
         }
     }
 
-    fn pip_change(&self) -> Option<i8> {
+    fn temp_offset(&self) -> Option<i8> {
         match self {
-            CardActionTrigger::CardSelection(action) => action.pip_change(),
-            CardActionTrigger::TileSelection(action) => action.pip_change(),
+            CardActionTrigger::CardSelection(action) => action.temp_offset(),
+            CardActionTrigger::TileSelection(action) => action.temp_offset(),
         }
     }
 }
 
 pub trait TileActionCommon {
     fn title(&self) -> &str;
-    fn pip_change(&self) -> Option<i8>;
+    fn temp_offset(&self) -> Option<i8>;
     // todo: kind
     // like action, passive, timed passive?
 }
@@ -45,14 +45,13 @@ pub enum TileCardAction {
     Move {
         reach: EffectReach,
         direction: EffectDirection,
-        pip_cost: u8,
+        temp_offset: i8,
     },
     Attack {
         reach: EffectReach,
         direction: EffectDirection,
         attack: u8,
-        pip_cost: u8,
-        poison: bool,
+        temp_offset: i8,
     },
     #[allow(dead_code)]
     Heal {
@@ -63,7 +62,7 @@ pub enum TileCardAction {
     // Reroll {
     //     reach: EffectReach,
     //     direction: EffectDirection,
-    //     pip_cost: u8,
+    //     temp_offset: i8,
     // },
 }
 impl TileActionCommon for TileCardAction {
@@ -71,16 +70,15 @@ impl TileActionCommon for TileCardAction {
         use TileCardAction::*;
         match self {
             Move { .. } => "Move",
-            Attack { poison: true, .. } => "Poison",
             Attack { .. } => "Attack",
             Heal { .. } => "Heal",
         }
     }
 
-    fn pip_change(&self) -> Option<i8> {
+    fn temp_offset(&self) -> Option<i8> {
         use TileCardAction::*;
         match self {
-            Move { pip_cost, .. } | Attack { pip_cost, .. } => Some(-(*pip_cost as i8)),
+            Move { temp_offset, .. } | Attack { temp_offset, .. } => Some(-(*temp_offset)),
             Heal { heal, .. } => Some(*heal as i8),
         }
     }
@@ -160,7 +158,6 @@ impl TileCardAction {
         use TileCardAction::*;
         match self {
             Move { .. } => TileInteractionPalette::new(INDIGO_400, INDIGO_800),
-            Attack { poison: true, .. } => TileInteractionPalette::new(PURPLE_500, PURPLE_900),
             Heal { .. } => TileInteractionPalette::new(LIME_400, GREEN_800),
             Attack { .. } => TileInteractionPalette::new(ROSE_300, RED_400),
         }
@@ -180,7 +177,7 @@ impl TileActionCommon for CardAction {
         }
     }
 
-    fn pip_change(&self) -> Option<i8> {
+    fn temp_offset(&self) -> Option<i8> {
         use CardAction::*;
         match self {
             HealSelf(heal) => Some(*heal as i8),
@@ -220,7 +217,7 @@ pub enum EffectReach {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum CardActionCondition {
-    PipCount(RangeInclusive<u8>),
+    Temp(RangeInclusive<u8>),
 }
 
 // pub enum CardActionKind {
@@ -281,14 +278,14 @@ fn play_selected_tile_card(
     match &card.trigger {
         CardActionTrigger::TileSelection(tile_card_action) => {
             match tile_card_action {
-                Move { pip_cost, .. } => cmd.trigger(MoveAction {
+                Move { temp_offset, .. } => cmd.trigger(MoveAction {
                     agent_e: *player,
                     to: trig.selected_tile,
-                    pip_cost: *pip_cost,
+                    temp_offset: *temp_offset,
                 }),
                 Attack {
                     attack,
-                    pip_cost,
+                    temp_offset,
                     // poison,
                     ..
                 } => {
@@ -296,7 +293,7 @@ fn play_selected_tile_card(
                         change: -(*attack as i8),
                     });
                     cmd.trigger(TempChangeAction {
-                        change: -(*pip_cost as i8),
+                        change: -*temp_offset,
                     });
                 }
                 Heal { heal, .. } => {

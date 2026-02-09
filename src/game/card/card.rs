@@ -105,11 +105,11 @@ fn draw_card_effects(
                 Transform::from_translation(Vec3::Y * 90.),
             ));
 
-            if let Some(pip_change) = card.trigger.pip_change() {
+            if let Some(temp_offset) = card.trigger.temp_offset() {
                 b.spawn((
-                    Name::new("pip_cost"),
-                    Text2d::new(pip_change.to_string()),
-                    TextColor::from(if pip_change > 0 { GREEN_400 } else { RED_400 }),
+                    Name::new("temp_offset"),
+                    Text2d::new(temp_offset.to_string()),
+                    TextColor::from(if temp_offset > 0 { GREEN_400 } else { RED_400 }),
                     Transform::from_translation(Vec3::new(50., 90., 0.)),
                 ));
             }

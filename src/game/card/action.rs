@@ -17,7 +17,7 @@ pub struct ActionQueue {
 pub struct MoveAction {
     pub agent_e: Entity,
     pub to: Coords,
-    pub pip_cost: u8,
+    pub temp_offset: i8,
 }
 
 fn move_action(trig: On<MoveAction>, mut cmd: Commands, mut grid: Single<&mut Grid>) {
@@ -28,9 +28,9 @@ fn move_action(trig: On<MoveAction>, mut cmd: Commands, mut grid: Single<&mut Gr
         300,
         Some(EaseFunction::BackIn),
     ));
-    if trig.pip_cost != 0 {
+    if trig.temp_offset != 0 {
         cmd.trigger(TempChangeAction {
-            change: -(trig.pip_cost as i8),
+            change: -(trig.temp_offset as i8),
         });
     }
 }
