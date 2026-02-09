@@ -83,10 +83,10 @@ fn spawn_level(
         .insert(DrawPileCard(piles_e));
     }
 
-    let grid = Grid::new(9, 7);
+    let grid = Grid::new(5, 5);
     cmd.spawn((tile_rect(BLUE_400, TileEntityKind::Player), Player));
 
-    for (x, y) in [(6, 1), (5, 3), (1, 1)] {
+    for (x, y) in [(2, 1), (3, 3), (1, 1)] {
         cmd.spawn((
             tile_rect(CRIMSON, TileEntityKind::Enemy),
             Transform::from_translation(grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.)),
