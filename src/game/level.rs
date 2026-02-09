@@ -1,7 +1,6 @@
 use bevy::color::palettes::css::CRIMSON;
 
 use crate::game::card_effect::{CardActionTrigger, EffectDirection, EffectReach};
-use crate::game::die::{self, Die, DieKind};
 use crate::game::pile::{DrawPileCard, Piles, draw_pile_card_pos_rot};
 use crate::game::tile::TileEntityKind;
 use crate::prelude::*;
@@ -56,7 +55,6 @@ fn spawn_level(
             attack: 2,
             poison: false,
         }),
-        CardActionTrigger::CardSelection(RerollSelf),
         CardActionTrigger::TileSelection(Attack {
             reach: EffectReach::Range(1),
             direction: EffectDirection::Orthogonal,
@@ -86,28 +84,11 @@ fn spawn_level(
     }
 
     let grid = Grid::new(9, 7);
-    cmd.spawn((
-        die::die(
-            BLUE_400,
-            Die {
-                kind: DieKind::D6,
-                pip_count: 5,
-            },
-            TileEntityKind::Player,
-        ),
-        Player,
-    ));
+    cmd.spawn((tile_rect(BLUE_400, TileEntityKind::Player), Player));
 
     for (x, y) in [(6, 1), (5, 3), (1, 1)] {
         cmd.spawn((
-            die::die(
-                CRIMSON,
-                Die {
-                    kind: DieKind::D6,
-                    pip_count: rng.random_range(1..=3),
-                },
-                TileEntityKind::Enemy,
-            ),
+            tile_rect(CRIMSON, TileEntityKind::Enemy),
             Transform::from_translation(grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.)),
         ));
     }
@@ -133,4 +114,8 @@ fn spawn_level(
     cmd.spawn(grid);
 
     next_phase.set(GameplayPhase::Gameplay);
+}
+
+pub fn tile_rect(color: impl Into<Color>, kind: TileEntityKind) -> impl Bundle {
+    (Sprite::from_color(color.into(), Vec2::splat(50.)), kind)
 }

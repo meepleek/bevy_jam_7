@@ -5,7 +5,6 @@ use crate::game::pause::Gameplay;
 pub mod action;
 pub mod card;
 pub mod card_effect;
-pub mod die;
 pub mod grid;
 pub mod level;
 pub mod pause;
@@ -22,7 +21,6 @@ pub(super) fn plugin(app: &mut App) {
         player::plugin,
         tile::plugin,
         grid::plugin,
-        die::plugin,
         pile::plugin,
         card::plugin,
         card_effect::plugin,

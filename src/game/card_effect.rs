@@ -174,7 +174,6 @@ impl TileCardAction {
 #[derive(Debug, Clone)]
 pub enum CardAction {
     HealSelf(u8),
-    RerollSelf,
     // Junk,
 }
 impl TileActionCommon for CardAction {
@@ -182,7 +181,6 @@ impl TileActionCommon for CardAction {
         use CardAction::*;
         match self {
             HealSelf(_) => "Heal self",
-            RerollSelf => "Reroll self",
         }
     }
 
@@ -190,7 +188,6 @@ impl TileActionCommon for CardAction {
         use CardAction::*;
         match self {
             HealSelf(heal) => Some(*heal as i8),
-            RerollSelf => None,
         }
     }
 }
@@ -244,7 +241,6 @@ pub struct PlayCard(pub Entity);
 fn play_card(
     trig: On<PlayCard>,
     selected_cards: Query<Entity, With<SelectedTileTriggerCard>>,
-    player: Single<Entity, With<Player>>,
     discard_pile: Single<Entity, With<DiscardPile>>,
     card_q: Query<&Card>,
     mut cmd: Commands,
@@ -253,13 +249,8 @@ fn play_card(
     let card = or_return!(card_q.get(trig.0));
     match &card.trigger {
         CardActionTrigger::CardSelection(action) => match action {
-            HealSelf(heal) => cmd.trigger(PipChangeAction {
-                agent_e: *player,
-                change: PipChangeKind::Offset(*heal as i8),
-            }),
-            RerollSelf => cmd.trigger(PipChangeAction {
-                agent_e: *player,
-                change: PipChangeKind::Reroll,
+            HealSelf(heal) => cmd.trigger(TempChangeAction {
+                change: *heal as i8,
             }),
         },
         CardActionTrigger::TileSelection(_) => {
@@ -286,7 +277,6 @@ fn play_selected_tile_card(
     trig: On<PlaySelectedTileCard>,
     player: Single<Entity, With<Player>>,
     discard_pile: Single<Entity, With<DiscardPile>>,
-    grid: Single<&Grid>,
     card_q: Query<&Card>,
     mut cmd: Commands,
 ) {
@@ -306,19 +296,16 @@ fn play_selected_tile_card(
                     // poison,
                     ..
                 } => {
-                    cmd.trigger(PipChangeAction {
-                        change: PipChangeKind::Offset(-(*attack as i8)),
-                        agent_e: or_return!(grid.coords_to_tile_entity(trig.selected_tile)).entity,
+                    cmd.trigger(TempChangeAction {
+                        change: -(*attack as i8),
                     });
-                    cmd.trigger(PipChangeAction {
-                        change: PipChangeKind::Offset(-(*pip_cost as i8)),
-                        agent_e: *player,
+                    cmd.trigger(TempChangeAction {
+                        change: -(*pip_cost as i8),
                     });
                 }
                 Heal { heal, .. } => {
-                    cmd.trigger(PipChangeAction {
-                        change: PipChangeKind::Offset(*heal as i8),
-                        agent_e: or_return!(grid.coords_to_tile_entity(trig.selected_tile)).entity,
+                    cmd.trigger(TempChangeAction {
+                        change: *heal as i8,
                     });
                 }
             }
