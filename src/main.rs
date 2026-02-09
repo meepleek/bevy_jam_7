@@ -17,9 +17,9 @@ mod screens;
 mod theme;
 mod utils;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::asset::AssetMetaCheck;
 
-use crate::game::pause::Playing;
+use crate::prelude::*;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()

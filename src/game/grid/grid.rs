@@ -1,9 +1,6 @@
 use bevy::math::U16Vec2;
 use bevy::platform::collections::HashMap;
 
-use super::Coords;
-use crate::game::tile::TileEntity;
-use crate::game::tile::TileEntityKind;
 use crate::prelude::*;
 
 pub const TILE_SIZE: u16 = 64;
@@ -191,7 +188,7 @@ mod tests {
     use tracing_test::traced_test;
 
     use super::*;
-    use crate::game::tile::TileEntityKind;
+    use crate::game::prelude::TileEntityKind;
 
     #[test_case(0., 0., 0., 0. => Some(Coords::ONE))]
     #[test_case(64.,-64., 0., 0. => Some(Coords::ZERO))]

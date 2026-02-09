@@ -7,13 +7,6 @@ use tiny_bail::or_continue;
 use tiny_bail::or_return;
 use tiny_bail::or_return_quiet;
 
-use crate::game::card::CARD_BORDER_COL;
-use crate::game::card::CARD_BORDER_COL_FOCUS;
-use crate::game::card::CardFace;
-use crate::game::card::CardFaceRoot;
-use crate::game::card::CardPointerOut;
-use crate::game::card_effect::CardActionTrigger;
-use crate::game::card_effect::PlayCard;
 use crate::prelude::tween::PriorityTween;
 use crate::prelude::*;
 

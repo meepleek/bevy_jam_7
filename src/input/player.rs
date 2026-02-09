@@ -1,9 +1,4 @@
-use crate::{
-    game::pause::{Gameplay, Paused, Playing},
-    input::menu::MenuInputCtx,
-    screens::Screen,
-};
-use bevy::prelude::*;
+use crate::{input::menu::MenuInputCtx, prelude::*, screens::Screen};
 use bevy_enhanced_input::prelude::*;
 use tiny_bail::or_continue;
 

@@ -2,29 +2,35 @@ use bevy::{math::I16Vec2, prelude::*};
 
 use crate::game::pause::Gameplay;
 
-pub mod action;
-pub mod card;
-pub mod card_effect;
-pub mod grid;
-pub mod level;
-pub mod pause;
-pub mod pile;
-pub mod player;
-pub mod tile;
+mod card;
+mod grid;
+mod level;
+mod pause;
+mod player;
 
 pub type Coords = I16Vec2;
+
+#[allow(unused_imports)]
+pub mod prelude {
+    pub use super::card::action::*;
+    pub use super::card::card::*;
+    pub use super::card::card_effect::*;
+    pub use super::card::pile::*;
+    pub use super::grid::grid::*;
+    pub use super::grid::tile::*;
+    pub use super::level::*;
+    pub use super::pause::*;
+    pub use super::player::*;
+    pub use super::{AiRoundPhase, Coords, GameplayPhase, PlayerRoundPhase, TurnOrder};
+}
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         level::plugin,
         pause::plugin,
         player::plugin,
-        tile::plugin,
         grid::plugin,
-        pile::plugin,
         card::plugin,
-        card_effect::plugin,
-        action::plugin,
     ))
     .add_sub_state::<GameplayPhase>()
     .add_sub_state::<TurnOrder>()

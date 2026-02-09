@@ -1,10 +1,9 @@
 use bevy::{input_focus::AutoFocus, prelude::*};
 
 use crate::{
-    game::pause::Paused,
     input::menu::{ButtonClick, LoopingMenu, menu_input},
+    prelude::*,
     screens::{PauseState, Screen},
-    theme::widget,
 };
 
 pub(super) fn plugin(app: &mut App) {

@@ -1,11 +1,7 @@
 use bevy::color::palettes::css::CRIMSON;
 
-use crate::game::card_effect::{CardActionTrigger, EffectDirection, EffectReach};
-use crate::game::pile::{DrawPileCard, Piles, draw_pile_card_pos_rot};
-use crate::game::tile::TileEntityKind;
+use crate::game::card;
 use crate::prelude::*;
-
-use crate::game::{GameplayPhase, card};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(GameplayPhase::LevelSpawn), spawn_level);
@@ -16,13 +12,63 @@ fn spawn_level(
     mut meshes: ResMut<Assets<Mesh>>,
     mut next_phase: ResMut<NextState<GameplayPhase>>,
 ) {
-    use crate::game::card_effect::CardAction::*;
-    use crate::game::card_effect::TileCardAction::*;
-
     let mut rng = rng();
     let piles_e = cmd.spawn((Name::new("Piles"), Piles)).id();
     let card_hover_mesh = meshes.add(Rectangle::new(230., 570.));
-    for (i, action) in [
+    for (i, action) in starting_debug_deck().into_iter().enumerate() {
+        let i = i as i16 - 3;
+        let (pos, rot) = draw_pile_card_pos_rot(&mut rng, i);
+        cmd.spawn(card::card(
+            action,
+            pos,
+            Rot2::degrees(rot),
+            card_hover_mesh.clone(),
+        ))
+        .insert(DrawPileCard(piles_e));
+    }
+
+    let grid = Grid::new(5, 5);
+    cmd.spawn((tile_rect(BLUE_400, TileEntityKind::Player), Player));
+
+    for (x, y) in [(2, 1), (3, 3), (1, 1)] {
+        cmd.spawn((
+            tile_rect(CRIMSON, TileEntityKind::Enemy),
+            Transform::from_translation(grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.)),
+        ));
+    }
+
+    cmd.spawn((
+        Name::new("grid"),
+        Transform::from_translation(Vec3::NEG_Z),
+        Visibility::default(),
+    ))
+    .with_children(|b| {
+        let size = grid.grid_size();
+        for tile in
+            (0..size.y).flat_map(|y| (0..size.x).map(move |x| Coords::new(x as i16, y as i16)))
+        {
+            b.spawn((
+                Name::new("grid_tile"),
+                Transform::from_translation(grid.tile_to_world(tile).unwrap().extend(0.)),
+                Sprite::from_color(GRAY_300, Vec2::splat(TILE_SIZE as f32 - 6.)),
+            ));
+        }
+    });
+
+    cmd.spawn(grid);
+
+    next_phase.set(GameplayPhase::Gameplay);
+}
+
+fn tile_rect(color: impl Into<Color>, kind: TileEntityKind) -> impl Bundle {
+    (Sprite::from_color(color.into(), Vec2::splat(50.)), kind)
+}
+
+fn starting_debug_deck() -> Vec<CardActionTrigger> {
+    use crate::prelude::CardAction::*;
+    use crate::prelude::TileCardAction::*;
+
+    vec![
         CardActionTrigger::TileSelection(Move {
             reach: EffectReach::Exact(1),
             direction: EffectDirection::Orthogonal,
@@ -69,53 +115,4 @@ fn spawn_level(
         }),
         CardActionTrigger::CardSelection(HealSelf(2)),
     ]
-    .into_iter()
-    .enumerate()
-    {
-        let i = i as i16 - 3;
-        let (pos, rot) = draw_pile_card_pos_rot(&mut rng, i);
-        cmd.spawn(card::card(
-            action,
-            pos,
-            Rot2::degrees(rot),
-            card_hover_mesh.clone(),
-        ))
-        .insert(DrawPileCard(piles_e));
-    }
-
-    let grid = Grid::new(5, 5);
-    cmd.spawn((tile_rect(BLUE_400, TileEntityKind::Player), Player));
-
-    for (x, y) in [(2, 1), (3, 3), (1, 1)] {
-        cmd.spawn((
-            tile_rect(CRIMSON, TileEntityKind::Enemy),
-            Transform::from_translation(grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.)),
-        ));
-    }
-
-    cmd.spawn((
-        Name::new("grid"),
-        Transform::from_translation(Vec3::NEG_Z),
-        Visibility::default(),
-    ))
-    .with_children(|b| {
-        let size = grid.grid_size();
-        for tile in
-            (0..size.y).flat_map(|y| (0..size.x).map(move |x| Coords::new(x as i16, y as i16)))
-        {
-            b.spawn((
-                Name::new("grid_tile"),
-                Transform::from_translation(grid.tile_to_world(tile).unwrap().extend(0.)),
-                Sprite::from_color(GRAY_300, Vec2::splat(TILE_SIZE as f32 - 6.)),
-            ));
-        }
-    });
-
-    cmd.spawn(grid);
-
-    next_phase.set(GameplayPhase::Gameplay);
-}
-
-pub fn tile_rect(color: impl Into<Color>, kind: TileEntityKind) -> impl Bundle {
-    (Sprite::from_color(color.into(), Vec2::splat(50.)), kind)
 }
