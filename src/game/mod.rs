@@ -8,7 +8,8 @@ mod grid;
 mod level;
 mod pause;
 mod player;
-pub mod turn;
+mod turn;
+mod ui;
 
 pub type Coords = I16Vec2;
 
@@ -36,6 +37,7 @@ pub(super) fn plugin(app: &mut App) {
         grid::plugin,
         card::plugin,
         turn::plugin,
+        ui::plugin,
     ))
     .add_sub_state::<GameplayPhase>();
 }
