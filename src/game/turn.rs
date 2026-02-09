@@ -4,7 +4,8 @@ pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<TurnOrder>()
         .add_sub_state::<PlayerRoundPhase>()
         .add_sub_state::<AiRoundPhase>()
-        .add_systems(OnEnter(TurnOrder::Player), fill_hand);
+        .add_systems(OnEnter(TurnOrder::Player), fill_hand)
+        .add_systems(Update, end_turn_on_empty_hand);
 }
 
 #[allow(dead_code)]
@@ -33,6 +34,16 @@ pub enum AiRoundPhase {
     #[default]
     Attack,
     Move,
+}
+
+fn end_turn_on_empty_hand(
+    piles_q: Query<&CardsInHand, Changed<CardsInHand>>,
+    mut turn: ResMut<NextState<TurnOrder>>,
+) {
+    let hand = or_return_quiet!(piles_q.single());
+    if hand.is_empty() {
+        turn.set(TurnOrder::Ai);
+    }
 }
 
 fn fill_hand(

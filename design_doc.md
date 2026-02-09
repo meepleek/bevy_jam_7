@@ -31,11 +31,17 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 
 - game is gonna be played on a Ratbook Pro
 - the splash of the game should show Jan's rat bevy logo (Made with Mischief ?)
-
+- loading screen lists dumb stuff like
+    - filling penne with nutella
+    - looking for colonoscopy pics
+    - smearing nutella on a crying child
+    - checking the dishwasher for rats
+    
 ## Vibe to go for
 
 - uneasy, confusing, surprising
 - use different incohesive objects in the world/level - mainly for enemies
+    - try to go for typical dream stuff like teeth
 
 ## Mechanics
 

@@ -3,6 +3,7 @@ use bevy::{math::I16Vec2, prelude::*};
 use crate::game::pause::Gameplay;
 
 mod card;
+mod enemy;
 mod grid;
 mod level;
 mod pause;
@@ -17,6 +18,7 @@ pub mod prelude {
     pub use super::card::effect::*;
     pub use super::card::effect::{card_effect::*, movement::*, temp::*, tile_effect::*};
     pub use super::card::pile::*;
+    pub use super::enemy::*;
     pub use super::grid::grid::*;
     pub use super::grid::tile::*;
     pub use super::level::*;
@@ -30,6 +32,7 @@ pub(super) fn plugin(app: &mut App) {
         level::plugin,
         pause::plugin,
         player::plugin,
+        enemy::plugin,
         grid::plugin,
         card::plugin,
         turn::plugin,
