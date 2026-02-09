@@ -14,7 +14,7 @@ pub type Coords = I16Vec2;
 pub mod prelude {
     pub use super::card::action::*;
     pub use super::card::card::*;
-    pub use super::card::card_effect::*;
+    pub use super::card::effect::*;
     pub use super::card::pile::*;
     pub use super::grid::grid::*;
     pub use super::grid::tile::*;
