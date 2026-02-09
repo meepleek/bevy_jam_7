@@ -7,8 +7,7 @@ pub const CARD_BORDER_COL: Srgba = GRAY_950;
 pub const CARD_BORDER_COL_FOCUS: Srgba = AMBER_400;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_observer(draw_card_effects)
-        .add_observer(process_selected_card);
+    app.add_observer(draw_card_effects);
 }
 
 #[derive(Component, Debug, Clone)]
@@ -153,61 +152,4 @@ fn draw_card_effects(
             }
         });
     });
-}
-
-fn process_selected_card(
-    trig: On<Add, SelectedTileTriggerCard>,
-    card_q: Query<&Card>,
-    mut cmd: Commands,
-    grid: Single<&Grid>,
-    player: Single<Entity, With<Player>>,
-) {
-    let card = or_return!(card_q.get(trig.event_target()));
-    let player_tile = or_return!(grid.entity_to_coords(*player));
-    match &card.trigger {
-        CardEffectTrigger::TileSelection(action) => {
-            let interaction_palette = action.tile_interaction_palette();
-            for (tile, position) in action
-                .tiles()
-                .into_iter()
-                .map(|tile| player_tile + tile)
-                .filter_map(|tile| {
-                    if matches!(action.tile_target(), TileTarget::Empty) || grid.contains_die(tile)
-                    {
-                        grid.tile_to_world(tile).map(|pos| (tile, pos))
-                    } else {
-                        None
-                    }
-                })
-            {
-                let card_e = trig.event_target();
-                cmd.spawn((
-                    Transform::from_translation(position.extend(0.)),
-                    Sprite::from_color(Color::NONE, Vec2::splat(60.)),
-                    tween::get_relative_sprite_color_anim(interaction_palette.highlight, 150, None),
-                    tween::get_absolute_scale_anim(Vec3::splat(0.5), Vec2::ONE, 180, None),
-                    TileInteraction,
-                    Pickable {
-                        should_block_lower: false,
-                        is_hoverable: true,
-                    },
-                ))
-                .observe(tween::tween_sprite_color_on_trigger::<Pointer<Over>, ()>(
-                    interaction_palette.hover,
-                ))
-                .observe(tween::tween_sprite_color_on_trigger::<Pointer<Out>, ()>(
-                    interaction_palette.highlight,
-                ))
-                .observe(move |_trig: On<Pointer<Click>>, mut cmd: Commands| {
-                    cmd.trigger(PlaySelectedTileCard {
-                        card_e,
-                        selected_tile: tile,
-                    });
-                });
-            }
-        }
-        CardEffectTrigger::CardSelection(_) => {
-            unreachable!("Card should have been played directly")
-        }
-    }
 }
