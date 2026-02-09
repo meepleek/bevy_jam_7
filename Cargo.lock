@@ -1069,10 +1069,15 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_enhanced_input",
  "bevy_trauma_shake",
+ "bevy_tweening",
+ "derive_more",
  "getrandom",
+ "paste",
  "rand",
+ "test-case",
  "tiny_bail",
  "tracing",
+ "tracing-test",
 ]
 
 [[package]]
@@ -1607,6 +1612,15 @@ source = "git+https://github.com/meepleek/bevy_trauma_shake?rev=1b0f784#1b0f784b
 dependencies = [
  "bevy",
  "noisy_bevy",
+]
+
+[[package]]
+name = "bevy_tweening"
+version = "0.14.0"
+source = "git+https://github.com/meepleek/bevy_tweening.git?branch=bevy_0_18#61a9243c1214098f04b623d869865238f0995bc0"
+dependencies = [
+ "bevy",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -4833,6 +4847,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-case"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
+dependencies = [
+ "test-case-macros",
+]
+
+[[package]]
+name = "test-case-core"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
+dependencies = [
+ "cfg-if",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "test-case-macros"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "test-case-core",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5046,6 +5093,27 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "tracing-test"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19a4c448db514d4f24c5ddb9f73f2ee71bfb24c526cf0c570ba142d1119e0051"
+dependencies = [
+ "tracing-core",
+ "tracing-subscriber",
+ "tracing-test-macro",
+]
+
+[[package]]
+name = "tracing-test-macro"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad06847b7afb65c7866a36664b75c40b895e318cea4f71299f013fb22965329d"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

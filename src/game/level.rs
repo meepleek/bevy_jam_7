@@ -1,56 +1,136 @@
-use bevy::prelude::*;
+use bevy::color::palettes::css::CRIMSON;
 
-use crate::{
-    asset_tracking::LoadResource,
-    audio::music,
-    game::{
-        GameplayPhase,
-        pause::Gameplay,
-        player::{PlayerAssets, player},
-    },
-};
+use crate::game::card_effect::{CardActionTrigger, EffectDirection, EffectReach};
+use crate::game::die::{self, Die, DieKind};
+use crate::game::pile::{DrawPileCard, Piles, draw_pile_card_pos_rot};
+use crate::game::tile::TileEntityKind;
+use crate::prelude::*;
+
+use crate::game::{GameplayPhase, card};
 
 pub(super) fn plugin(app: &mut App) {
-    app.load_resource::<LevelAssets>()
-        .add_systems(OnEnter(GameplayPhase::LevelSpawn), spawn_level);
+    app.add_systems(OnEnter(GameplayPhase::LevelSpawn), spawn_level);
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
-#[reflect(Resource)]
-pub struct LevelAssets {
-    #[dependency]
-    music: Handle<AudioSource>,
-}
-
-impl FromWorld for LevelAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            music: assets.load("audio/music/Fluffing A Duck.ogg"),
-        }
-    }
-}
-
-/// A system that spawns the main level.
-pub fn spawn_level(
-    mut commands: Commands,
-    level_assets: Res<LevelAssets>,
-    player_assets: Res<PlayerAssets>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+fn spawn_level(
+    mut cmd: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
     mut next_phase: ResMut<NextState<GameplayPhase>>,
 ) {
-    commands.spawn((
-        Name::new("Level"),
-        Transform::default(),
-        Visibility::default(),
-        DespawnOnExit(Gameplay),
-        children![
-            player(400.0, &player_assets, &mut texture_atlas_layouts),
-            (
-                Name::new("Gameplay Music"),
-                music(level_assets.music.clone())
-            )
-        ],
+    use crate::game::card_effect::CardAction::*;
+    use crate::game::card_effect::TileCardAction::*;
+
+    let mut rng = rng();
+    let piles_e = cmd.spawn((Name::new("Piles"), Piles)).id();
+    let card_hover_mesh = meshes.add(Rectangle::new(230., 570.));
+    for (i, action) in [
+        CardActionTrigger::TileSelection(Move {
+            reach: EffectReach::Exact(1),
+            direction: EffectDirection::Orthogonal,
+            pip_cost: 1,
+        }),
+        CardActionTrigger::TileSelection(Move {
+            reach: EffectReach::Exact(1),
+            direction: EffectDirection::Orthogonal,
+            pip_cost: 1,
+        }),
+        CardActionTrigger::TileSelection(Move {
+            reach: EffectReach::Exact(1),
+            direction: EffectDirection::Orthogonal,
+            pip_cost: 1,
+        }),
+        CardActionTrigger::TileSelection(Move {
+            reach: EffectReach::Exact(1),
+            direction: EffectDirection::Orthogonal,
+            pip_cost: 1,
+        }),
+        CardActionTrigger::TileSelection(Move {
+            reach: EffectReach::Exact(2),
+            direction: EffectDirection::Diagonal,
+            pip_cost: 1,
+        }),
+        CardActionTrigger::TileSelection(Attack {
+            reach: EffectReach::Range(2),
+            direction: EffectDirection::Orthogonal,
+            pip_cost: 2,
+            attack: 2,
+            poison: false,
+        }),
+        CardActionTrigger::CardSelection(RerollSelf),
+        CardActionTrigger::TileSelection(Attack {
+            reach: EffectReach::Range(1),
+            direction: EffectDirection::Orthogonal,
+            pip_cost: 2,
+            attack: 3,
+            poison: false,
+        }),
+        CardActionTrigger::TileSelection(Move {
+            reach: EffectReach::Exact(2),
+            direction: EffectDirection::Orthogonal,
+            pip_cost: 1,
+        }),
+        CardActionTrigger::CardSelection(HealSelf(2)),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let i = i as i16 - 3;
+        let (pos, rot) = draw_pile_card_pos_rot(&mut rng, i);
+        cmd.spawn(card::card(
+            action,
+            pos,
+            Rot2::degrees(rot),
+            card_hover_mesh.clone(),
+        ))
+        .insert(DrawPileCard(piles_e));
+    }
+
+    let grid = Grid::new(9, 7);
+    cmd.spawn((
+        die::die(
+            BLUE_400,
+            Die {
+                kind: DieKind::D6,
+                pip_count: 5,
+            },
+            TileEntityKind::Player,
+        ),
+        Player,
     ));
+
+    for (x, y) in [(6, 1), (5, 3), (1, 1)] {
+        cmd.spawn((
+            die::die(
+                CRIMSON,
+                Die {
+                    kind: DieKind::D6,
+                    pip_count: rng.random_range(1..=3),
+                },
+                TileEntityKind::Enemy,
+            ),
+            Transform::from_translation(grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.)),
+        ));
+    }
+
+    cmd.spawn((
+        Name::new("grid"),
+        Transform::from_translation(Vec3::NEG_Z),
+        Visibility::default(),
+    ))
+    .with_children(|b| {
+        let size = grid.grid_size();
+        for tile in
+            (0..size.y).flat_map(|y| (0..size.x).map(move |x| Coords::new(x as i16, y as i16)))
+        {
+            b.spawn((
+                Name::new("grid_tile"),
+                Transform::from_translation(grid.tile_to_world(tile).unwrap().extend(0.)),
+                Sprite::from_color(GRAY_300, Vec2::splat(TILE_SIZE as f32 - 6.)),
+            ));
+        }
+    });
+
+    cmd.spawn(grid);
+
     next_phase.set(GameplayPhase::Gameplay);
 }

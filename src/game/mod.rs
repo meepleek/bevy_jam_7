@@ -1,20 +1,32 @@
-use bevy::prelude::*;
+use bevy::{math::I16Vec2, prelude::*};
 
 use crate::game::pause::Gameplay;
 
-mod animation;
+pub mod action;
+pub mod card;
+pub mod card_effect;
+pub mod die;
+pub mod grid;
 pub mod level;
-mod movement;
 pub mod pause;
+pub mod pile;
 pub mod player;
+pub mod tile;
+
+pub type Coords = I16Vec2;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
-        animation::plugin,
         level::plugin,
-        movement::plugin,
         pause::plugin,
         player::plugin,
+        tile::plugin,
+        grid::plugin,
+        die::plugin,
+        pile::plugin,
+        card::plugin,
+        card_effect::plugin,
+        action::plugin,
     ))
     .add_sub_state::<GameplayPhase>()
     .add_sub_state::<TurnOrder>()
