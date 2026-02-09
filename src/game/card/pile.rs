@@ -272,7 +272,7 @@ fn on_card_click(
 ) {
     let (card, selected) = or_return!(card_selected_q.get(trig.event_target()));
     match card.trigger {
-        CardActionTrigger::TileSelection(_) => {
+        CardEffectTrigger::TileSelection(_) => {
             if selected {
                 // deselect card
                 or_return!(cmd.get_entity(trig.event_target()))
@@ -283,7 +283,7 @@ fn on_card_click(
                 or_return!(cmd.get_entity(trig.event_target())).insert(SelectedTileTriggerCard);
             }
         }
-        CardActionTrigger::CardSelection(_) => {
+        CardEffectTrigger::CardSelection(_) => {
             cmd.trigger(PlayCard(trig.event_target()));
         }
     }

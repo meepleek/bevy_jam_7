@@ -1,16 +1,7 @@
-use std::collections::VecDeque;
-
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_observer(move_action);
-}
-
-#[allow(dead_code)]
-#[derive(Component)]
-pub struct ActionQueue {
-    // todo:
-    actions: VecDeque<()>,
 }
 
 #[derive(Event, Debug)]
@@ -33,9 +24,4 @@ fn move_action(trig: On<MoveAction>, mut cmd: Commands, mut grid: Single<&mut Gr
             change: -(trig.temp_offset as i8),
         });
     }
-}
-
-#[derive(Event, Debug)]
-pub struct TempChangeAction {
-    pub change: i8,
 }

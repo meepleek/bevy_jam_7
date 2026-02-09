@@ -64,53 +64,53 @@ fn tile_rect(color: impl Into<Color>, kind: TileEntityKind) -> impl Bundle {
     (Sprite::from_color(color.into(), Vec2::splat(50.)), kind)
 }
 
-fn starting_debug_deck() -> Vec<CardActionTrigger> {
-    use crate::prelude::CardAction::*;
-    use crate::prelude::TileCardAction::*;
+fn starting_debug_deck() -> Vec<CardEffectTrigger> {
+    use crate::prelude::CardEffect::*;
+    use crate::prelude::TileCardEffect::*;
 
     vec![
-        CardActionTrigger::TileSelection(Move {
+        CardEffectTrigger::TileSelection(Move {
             reach: EffectReach::Exact(1),
             direction: EffectDirection::Orthogonal,
             temp_offset: 1,
         }),
-        CardActionTrigger::TileSelection(Move {
+        CardEffectTrigger::TileSelection(Move {
             reach: EffectReach::Exact(1),
             direction: EffectDirection::Orthogonal,
             temp_offset: 1,
         }),
-        CardActionTrigger::TileSelection(Move {
+        CardEffectTrigger::TileSelection(Move {
             reach: EffectReach::Exact(1),
             direction: EffectDirection::Orthogonal,
             temp_offset: 1,
         }),
-        CardActionTrigger::TileSelection(Move {
+        CardEffectTrigger::TileSelection(Move {
             reach: EffectReach::Exact(1),
             direction: EffectDirection::Orthogonal,
             temp_offset: 1,
         }),
-        CardActionTrigger::TileSelection(Move {
+        CardEffectTrigger::TileSelection(Move {
             reach: EffectReach::Exact(2),
             direction: EffectDirection::Diagonal,
             temp_offset: 1,
         }),
-        CardActionTrigger::TileSelection(Attack {
+        CardEffectTrigger::TileSelection(Attack {
             reach: EffectReach::Range(2),
             direction: EffectDirection::Orthogonal,
             temp_offset: 2,
             attack: 2,
         }),
-        CardActionTrigger::TileSelection(Attack {
+        CardEffectTrigger::TileSelection(Attack {
             reach: EffectReach::Range(1),
             direction: EffectDirection::Orthogonal,
             temp_offset: 2,
             attack: 3,
         }),
-        CardActionTrigger::TileSelection(Move {
+        CardEffectTrigger::TileSelection(Move {
             reach: EffectReach::Exact(2),
             direction: EffectDirection::Orthogonal,
             temp_offset: 1,
         }),
-        CardActionTrigger::CardSelection(HealSelf(2)),
+        CardEffectTrigger::CardSelection(HealSelf(2)),
     ]
 }

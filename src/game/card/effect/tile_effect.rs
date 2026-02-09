@@ -1,47 +1,11 @@
-use std::ops::RangeInclusive;
-
-use crate::prelude::*;
+pub use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_observer(play_selected_tile_card)
-        .add_observer(play_card);
-}
-
-pub enum TileTarget {
-    EmptyTiles,
-    Dice,
+    app.add_observer(play_selected_tile_card);
 }
 
 #[derive(Debug, Clone)]
-pub enum CardActionTrigger {
-    CardSelection(CardAction),
-    TileSelection(TileCardAction),
-}
-impl TileActionCommon for CardActionTrigger {
-    fn title(&self) -> &str {
-        match self {
-            CardActionTrigger::CardSelection(action) => action.title(),
-            CardActionTrigger::TileSelection(action) => action.title(),
-        }
-    }
-
-    fn temp_offset(&self) -> Option<i8> {
-        match self {
-            CardActionTrigger::CardSelection(action) => action.temp_offset(),
-            CardActionTrigger::TileSelection(action) => action.temp_offset(),
-        }
-    }
-}
-
-pub trait TileActionCommon {
-    fn title(&self) -> &str;
-    fn temp_offset(&self) -> Option<i8>;
-    // todo: kind
-    // like action, passive, timed passive?
-}
-
-#[derive(Debug, Clone)]
-pub enum TileCardAction {
+pub enum TileCardEffect {
     Move {
         reach: EffectReach,
         direction: EffectDirection,
@@ -65,9 +29,9 @@ pub enum TileCardAction {
     //     temp_offset: i8,
     // },
 }
-impl TileActionCommon for TileCardAction {
+impl CardEffectCommon for TileCardEffect {
     fn title(&self) -> &str {
-        use TileCardAction::*;
+        use TileCardEffect::*;
         match self {
             Move { .. } => "Move",
             Attack { .. } => "Attack",
@@ -76,25 +40,25 @@ impl TileActionCommon for TileCardAction {
     }
 
     fn temp_offset(&self) -> Option<i8> {
-        use TileCardAction::*;
+        use TileCardEffect::*;
         match self {
             Move { temp_offset, .. } | Attack { temp_offset, .. } => Some(-(*temp_offset)),
             Heal { heal, .. } => Some(*heal as i8),
         }
     }
 }
-impl TileCardAction {
+impl TileCardEffect {
     pub fn tile_target(&self) -> TileTarget {
-        use TileCardAction::*;
+        use TileCardEffect::*;
 
         match self {
-            Move { .. } => TileTarget::EmptyTiles,
-            Attack { .. } | Heal { .. } => TileTarget::Dice,
+            Move { .. } => TileTarget::Empty,
+            Attack { .. } | Heal { .. } => TileTarget::Enemy,
         }
     }
 
     pub fn tiles(&self) -> Vec<Coords> {
-        use TileCardAction::*;
+        use TileCardEffect::*;
         match self {
             Move {
                 reach, direction, ..
@@ -146,7 +110,7 @@ impl TileCardAction {
                         })
                         .collect(),
                 };
-                if matches!(self.tile_target(), TileTarget::Dice) {
+                if matches!(self.tile_target(), TileTarget::Enemy) {
                     tiles.push(Coords::ZERO);
                 }
                 tiles
@@ -155,115 +119,13 @@ impl TileCardAction {
     }
 
     pub fn tile_interaction_palette(&self) -> TileInteractionPalette {
-        use TileCardAction::*;
+        use TileCardEffect::*;
         match self {
             Move { .. } => TileInteractionPalette::new(INDIGO_400, INDIGO_800),
             Heal { .. } => TileInteractionPalette::new(LIME_400, GREEN_800),
             Attack { .. } => TileInteractionPalette::new(ROSE_300, RED_400),
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub enum CardAction {
-    HealSelf(u8),
-    // Junk,
-}
-impl TileActionCommon for CardAction {
-    fn title(&self) -> &str {
-        use CardAction::*;
-        match self {
-            HealSelf(_) => "Heal self",
-        }
-    }
-
-    fn temp_offset(&self) -> Option<i8> {
-        use CardAction::*;
-        match self {
-            HealSelf(heal) => Some(*heal as i8),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TileInteractionPalette {
-    pub highlight: Color,
-    pub hover: Color,
-}
-impl TileInteractionPalette {
-    pub fn new(highlight: impl Into<Color>, hover: impl Into<Color>) -> Self {
-        Self {
-            highlight: highlight.into(),
-            hover: hover.into(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum EffectDirection {
-    #[allow(dead_code)]
-    Area,
-    Orthogonal,
-    #[allow(dead_code)]
-    Diagonal,
-}
-
-#[derive(Debug, Clone)]
-pub enum EffectReach {
-    Exact(u8),
-    Range(u8),
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum CardActionCondition {
-    Temp(RangeInclusive<u8>),
-}
-
-// pub enum CardActionKind {
-//     Play,
-//     Discard,
-//     Trash,
-//     // HeldInHand,
-//     // InDiscard,
-// }
-
-#[derive(Event)]
-pub struct PlayCard(pub Entity);
-
-fn play_card(
-    trig: On<PlayCard>,
-    selected_cards: Query<Entity, With<SelectedTileTriggerCard>>,
-    discard_pile: Single<Entity, With<DiscardPile>>,
-    card_q: Query<&Card>,
-    mut cmd: Commands,
-) {
-    use CardAction::*;
-    let card = or_return!(card_q.get(trig.0));
-    match &card.trigger {
-        CardActionTrigger::CardSelection(action) => match action {
-            HealSelf(heal) => cmd.trigger(TempChangeAction {
-                change: *heal as i8,
-            }),
-        },
-        CardActionTrigger::TileSelection(_) => {
-            error!(?card, "Card should not have been played on selection");
-            unreachable!();
-        }
-    }
-    or_return!(cmd.get_entity(trig.0))
-        .try_remove::<HandCard>()
-        .try_insert(DiscardPileCard(discard_pile.into_inner()));
-    // deselect any (other) selected tile cards on play
-    for selected_card_e in &selected_cards {
-        or_return!(cmd.get_entity(selected_card_e)).try_remove::<SelectedTileTriggerCard>();
-    }
-}
-
-#[derive(Event)]
-pub struct PlaySelectedTileCard {
-    pub card_e: Entity,
-    pub selected_tile: Coords,
 }
 
 fn play_selected_tile_card(
@@ -273,10 +135,10 @@ fn play_selected_tile_card(
     card_q: Query<&Card>,
     mut cmd: Commands,
 ) {
-    use TileCardAction::*;
+    use TileCardEffect::*;
     let card = or_return!(card_q.get(trig.card_e));
     match &card.trigger {
-        CardActionTrigger::TileSelection(tile_card_action) => {
+        CardEffectTrigger::TileSelection(tile_card_action) => {
             match tile_card_action {
                 Move { temp_offset, .. } => cmd.trigger(MoveAction {
                     agent_e: *player,
@@ -303,7 +165,7 @@ fn play_selected_tile_card(
                 }
             }
         }
-        CardActionTrigger::CardSelection(_) => {
+        CardEffectTrigger::CardSelection(_) => {
             error!(?card, "Card should not have been played on tile selection");
             unreachable!();
         }

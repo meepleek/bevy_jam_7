@@ -14,8 +14,16 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component, Debug, Clone)]
 #[require(Transform)]
 pub struct Card {
-    pub trigger: CardActionTrigger,
+    pub trigger: CardEffectTrigger,
 }
+
+// pub enum CardUse {
+//     Play,
+//     Discard,
+//     // Trash,
+//     // HeldInHand,
+//     // InDiscard,
+// }
 
 #[derive(EntityEvent)]
 #[entity_event(propagate)]
@@ -31,7 +39,7 @@ relationship_1_to_1!(CardContent, CardContentRoot);
 relationship_1_to_1!(CardFace, CardFaceRoot);
 
 pub fn card(
-    action: CardActionTrigger,
+    action: CardEffectTrigger,
     position: Vec3,
     rotation: Rot2,
     hover_mesh: Handle<Mesh>,
@@ -115,7 +123,7 @@ fn draw_card_effects(
             }
 
             match &card.trigger {
-                CardActionTrigger::CardSelection(_action) => {
+                CardEffectTrigger::CardSelection(_action) => {
                     // todo: smt for card actions
                     //  b.spawn((
                     //             Name::new("immediate_action"),
@@ -123,7 +131,7 @@ fn draw_card_effects(
                     //             TextColor::from(BLACK),
                     //         ));
                 }
-                CardActionTrigger::TileSelection(action) => {
+                CardEffectTrigger::TileSelection(action) => {
                     b.spawn((
                         Name::new("effect_tiles"),
                         Transform::from_translation(Vec3::Y * -15.),
@@ -157,15 +165,14 @@ fn process_selected_card(
     let card = or_return!(card_q.get(trig.event_target()));
     let player_tile = or_return!(grid.entity_to_coords(*player));
     match &card.trigger {
-        CardActionTrigger::TileSelection(action) => {
+        CardEffectTrigger::TileSelection(action) => {
             let interaction_palette = action.tile_interaction_palette();
             for (tile, position) in action
                 .tiles()
                 .into_iter()
                 .map(|tile| player_tile + tile)
                 .filter_map(|tile| {
-                    if matches!(action.tile_target(), TileTarget::EmptyTiles)
-                        || grid.contains_die(tile)
+                    if matches!(action.tile_target(), TileTarget::Empty) || grid.contains_die(tile)
                     {
                         grid.tile_to_world(tile).map(|pos| (tile, pos))
                     } else {
@@ -199,7 +206,7 @@ fn process_selected_card(
                 });
             }
         }
-        CardActionTrigger::CardSelection(_) => {
+        CardEffectTrigger::CardSelection(_) => {
             unreachable!("Card should have been played directly")
         }
     }
