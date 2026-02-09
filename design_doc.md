@@ -141,16 +141,18 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 - explosive enemies that rush the player
 - enemies that change temp
 - enemies that add temp/junk cards
+- enemies that protect others/add single hit shields
 
 #### Inspo matrix
 
-| xxxxxxxxx | direct | lob | explosive | temp | junk |
-| --------- | ------ | --- | --------- | ---- | ---- |
-| direct    |        |     |           |      |      |
-| lob       |        |     |           |      |      |
-| explosive |        |     |           |      |      |
-| temp      |        |     |           |      |      |
-| junk      |        |     |           |      |      |
+| xxxxxxxxx | direct | lob | explosive | temp | junk | shield |
+| --------- | ------ | --- | --------- | ---- | ---- |        |
+| direct    |        |     |           |      |      |        |
+| lob       |        |     |           |      |      |        |
+| explosive |        |     |           |      |      |        |
+| temp      |        |     |           |      |      |        |
+| junk      |        |     |           |      |      |        |
+| shield    |        |     |           |      |      |        |
 
 ### To consider
 
