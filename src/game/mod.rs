@@ -7,6 +7,7 @@ mod grid;
 mod level;
 mod pause;
 mod player;
+pub mod turn;
 
 pub type Coords = I16Vec2;
 
@@ -21,7 +22,7 @@ pub mod prelude {
     pub use super::level::*;
     pub use super::pause::*;
     pub use super::player::*;
-    pub use super::{AiRoundPhase, Coords, GameplayPhase, PlayerRoundPhase, TurnOrder};
+    pub use super::{Coords, GameplayPhase};
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -31,11 +32,9 @@ pub(super) fn plugin(app: &mut App) {
         player::plugin,
         grid::plugin,
         card::plugin,
+        turn::plugin,
     ))
-    .add_sub_state::<GameplayPhase>()
-    .add_sub_state::<TurnOrder>()
-    .add_sub_state::<PlayerRoundPhase>()
-    .add_sub_state::<AiRoundPhase>();
+    .add_sub_state::<GameplayPhase>();
 }
 
 #[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -48,32 +47,4 @@ pub enum GameplayPhase {
     Win,
     #[allow(dead_code)]
     GameOver,
-}
-
-#[allow(dead_code)]
-#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
-#[source(GameplayPhase = GameplayPhase::Gameplay)]
-pub enum TurnOrder {
-    #[default]
-    Player,
-    Ai,
-}
-
-#[allow(dead_code)]
-#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
-#[source(TurnOrder = TurnOrder::Player)]
-pub enum PlayerRoundPhase {
-    #[default]
-    CardSelection,
-    CardEffect,
-    Cleanup,
-}
-
-#[allow(dead_code)]
-#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
-#[source(TurnOrder = TurnOrder::Ai)]
-pub enum AiRoundPhase {
-    #[default]
-    Attack,
-    Move,
 }

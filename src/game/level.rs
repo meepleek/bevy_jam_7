@@ -13,6 +13,7 @@ fn spawn_level(
     mut next_phase: ResMut<NextState<GameplayPhase>>,
 ) {
     let mut rng = rng();
+    cmd.spawn((Name::new("Character"), HandSize::default()));
     let piles_e = cmd.spawn((Name::new("Piles"), Piles)).id();
     let card_hover_mesh = meshes.add(Rectangle::new(230., 570.));
     for (i, action) in starting_debug_deck().into_iter().enumerate() {

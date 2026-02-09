@@ -1,3 +1,6 @@
+use std::num::NonZero;
+use std::num::NonZeroU8;
+
 use bevy::time::common_conditions::repeating_after_delay;
 use bevy_tweening::Animator;
 use bevy_tweening::BoxedTweenable;
@@ -12,10 +15,7 @@ use crate::prelude::*;
 
 relationship_1_to_n!(DrawPileCard, DrawPile);
 relationship_1_to_n!(HandCard, CardsInHand);
-// relationship_1_to_n!(HandCardObserver, CardsInHandObservers);
 relationship_1_to_n!(DiscardPileCard, DiscardPile);
-
-pub const START_HAND_SIZE: u8 = 3;
 
 const FOCUSED_CARD_Y: f32 = -220.;
 
@@ -30,7 +30,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_observer(ensure_single_at_most::<CardFocused>);
     app.add_systems(
         Update,
-        check_hand_size.run_if(repeating_after_delay(Duration::from_millis(300))),
+        reposition_hand_cards.run_if(repeating_after_delay(Duration::from_millis(300))),
     );
     app.register_type::<DrawPile>()
         .register_type::<CardsInHand>()
@@ -40,7 +40,7 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 // todo: consider rewriting this so that
-// piles is a singleton component (ensure_one) that tracks all thi piles lie draw, hand, discard using observers
+// piles is a singleton component (ensure_one) that tracks all the piles like draw, hand, discard using observers
 // then add an create animator fn to either CardState or the Piles component
 // that animates the position, rotation, scale (focus pop) & colors
 // and run it from a single system
@@ -49,6 +49,20 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 #[require(DrawPile, CardsInHand, DiscardPile)]
 pub struct Piles;
+
+#[derive(Component, Debug, Deref)]
+pub struct HandSize(pub NonZeroU8);
+impl HandSize {
+    pub fn as_usize(&self) -> usize {
+        self.0.get() as usize
+    }
+}
+
+impl Default for HandSize {
+    fn default() -> Self {
+        Self(NonZero::new(5).unwrap())
+    }
+}
 
 fn pile_card_pos_rot(
     rng: &mut ThreadRng,
@@ -114,7 +128,7 @@ fn hand_card_pos(card_index: usize, pile_size: usize) -> Vec3 {
     )
 }
 
-fn hand_card_pos_with_offset(card_index: usize, pile_size: usize, rng: &mut ThreadRng) -> Vec3 {
+pub fn hand_card_pos_with_offset(card_index: usize, pile_size: usize, rng: &mut ThreadRng) -> Vec3 {
     let max_offset = 10f32;
     hand_card_pos(card_index, pile_size)
         + Vec3::new(
@@ -124,17 +138,17 @@ fn hand_card_pos_with_offset(card_index: usize, pile_size: usize, rng: &mut Thre
         )
 }
 
-fn hand_card_rot(card_index: usize, pile_size: usize) -> f32 {
-    let i = card_index_mult(card_index, pile_size);
-    (-10. * i).to_radians()
-}
-
-fn hand_card_rot_with_offset(card_index: usize, pile_size: usize, rng: &mut ThreadRng) -> f32 {
+pub fn hand_card_rot_with_offset(card_index: usize, pile_size: usize, rng: &mut ThreadRng) -> f32 {
     let max_rot_offset = 5f32;
     hand_card_rot(card_index, pile_size)
         + rng
             .random_range(-max_rot_offset..max_rot_offset)
             .to_radians()
+}
+
+fn hand_card_rot(card_index: usize, pile_size: usize) -> f32 {
+    let i = card_index_mult(card_index, pile_size);
+    (-10. * i).to_radians()
 }
 
 fn card_added_to_hand(
@@ -192,39 +206,13 @@ fn restore_empty_piles<T: RelationshipTarget>(trig: On<Remove, T>, mut cmd: Comm
     or_return!(cmd.get_entity(trig.event_target())).insert(Piles);
 }
 
-fn check_hand_size(
-    piles_q: Query<(Entity, &DrawPile, &CardsInHand, &DiscardPile), Changed<CardsInHand>>,
+fn reposition_hand_cards(
+    piles_q: Query<&CardsInHand, Changed<CardsInHand>>,
     mut cmd: Commands,
     rotation_q: Query<&RotationRoot, Without<SelectedTileTriggerCard>>,
 ) {
-    let (piles_e, draw, hand, discard) = or_return_quiet!(piles_q.single());
-    if hand.is_empty() {
-        tracing::debug!("draw new cards pls!");
-        let mut to_draw = Vec::new();
-        for e in draw.0.iter().rev().take(3) {
-            or_continue!(cmd.get_entity(*e)).try_remove::<DrawPileCard>();
-            to_draw.push(*e);
-        }
-        let hand_size = START_HAND_SIZE as usize;
-        if to_draw.len() < hand_size {
-            // not enough cards in the draw pile
-            // shuffle the discard, take the rest from there, then move to rest to the draw pile
-            let mut new_draw = discard.0.clone();
-            let mut rng = rng();
-            new_draw.shuffle(&mut rng);
-            for e in new_draw {
-                or_continue!(cmd.get_entity(e)).try_remove::<DiscardPileCard>();
-                if to_draw.len() < hand_size {
-                    to_draw.push(e);
-                } else {
-                    or_continue!(cmd.get_entity(e)).try_insert(DrawPileCard(piles_e));
-                }
-            }
-        }
-        for e in to_draw {
-            or_continue!(cmd.get_entity(e)).try_insert(HandCard(piles_e));
-        }
-    } else {
+    let hand = or_return_quiet!(piles_q.single());
+    if !hand.is_empty() {
         // hand cards have changed => just tween their positions
         let anim_dur_ms = 200;
         let mut rng = rng();
