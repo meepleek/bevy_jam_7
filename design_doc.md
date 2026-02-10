@@ -15,9 +15,16 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 ## Story
 
 - kid is wakes up with a fever describing their insane dream
+
+### a) Pharmacy
+
 - parents decide to send one of their kids to the pharmacy for a drug, but they forget their wallet home and need to play and beat a card game designed by the pharmacist => the game itself
     - bonus points to reuse the same art (comic-strip?) to retell different unhinged inside jokes
 - use the waking up from a (fever)dream as the in-univers explanation for failure/death
+
+### b) Battling the disease/fever
+
+- thematically the enemies are the disease
 
 ### Nonsense to iclude from the stream/themes/jam chat
 
@@ -46,6 +53,19 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 ## Mechanics
 
 - temp meter (UI styled as a thermometer) which can't go neither too high or too low
+- heat - players set temp increase for each round
+    - 1 => 2
+    - 2 => 4
+    - 3 => 7
+    - 4 => 11
+    - also increases enemy spawns?
+- after each round
+    - earn income for heat
+    - buy cards
+    - allow selling one card?
+        - simplify UI by just giving a hand of cards to sell from
+        - junk cards the player has to actually pay for instead 
+    - set heat for next level
 - allow players to carry over 1 card & 1 ability from a failed run
 - push yr luck (some abilities tempting players to stay at low/high temp)
 
