@@ -49,7 +49,7 @@ fn handle_temp_change(action: On<TempChangeAction>, mut temp: ResMut<Temp>) {
         // todo: figure out what makes the game more nailbiting
         // a: just temp
         // b: HP which is damaged on temp overflow
-        todo!("impl taking dmg or maybe just dying");
+        tracing::warn!("impl taking dmg or maybe just dying");
     }
 }
 

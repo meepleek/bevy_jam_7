@@ -34,6 +34,9 @@ fn spawn_level(
 
     for (x, y) in [(2, 1), (3, 3), (1, 1)] {
         cmd.spawn((
+            Enemy {
+                kind: EnemyKind::Chaser,
+            },
             tile_rect(CRIMSON, TileEntityKind::Enemy),
             Transform::from_translation(grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.)),
         ));

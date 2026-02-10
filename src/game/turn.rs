@@ -3,7 +3,6 @@ use crate::prelude::*;
 pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<TurnOrder>()
         .add_sub_state::<PlayerRoundPhase>()
-        .add_sub_state::<AiRoundPhase>()
         .add_systems(OnEnter(TurnOrder::Player), fill_hand)
         .add_systems(Update, end_turn_on_empty_hand);
 }
@@ -25,15 +24,6 @@ pub enum PlayerRoundPhase {
     CardSelection,
     CardEffect,
     Cleanup,
-}
-
-#[allow(dead_code)]
-#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
-#[source(TurnOrder = TurnOrder::Ai)]
-pub enum AiRoundPhase {
-    #[default]
-    Attack,
-    Move,
 }
 
 fn end_turn_on_empty_hand(
