@@ -7,7 +7,7 @@ use bevy::{
 };
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
-use crate::screens::Screen;
+use crate::{prelude::TempChangeAction, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
     // Log `Screen` state transitions.
@@ -18,6 +18,14 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         toggle_debug_ui.run_if(input_just_pressed(TOGGLE_KEY)),
     );
+    app.add_systems(
+        Update,
+        change_temp::<true>.run_if(input_just_pressed(KeyCode::Digit3)),
+    )
+    .add_systems(
+        Update,
+        change_temp::<false>.run_if(input_just_pressed(KeyCode::Digit0)),
+    );
 
     // inspector
     app.add_plugins(EguiPlugin::default()).add_plugins(
@@ -25,8 +33,14 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-const TOGGLE_KEY: KeyCode = KeyCode::Backquote;
+const TOGGLE_KEY: KeyCode = KeyCode::Tab;
 
 fn toggle_debug_ui(mut options: ResMut<UiDebugOptions>) {
     options.toggle();
+}
+
+fn change_temp<const ADD: bool>(mut cmd: Commands) {
+    cmd.trigger(TempChangeAction {
+        change: if ADD { 1 } else { -1 },
+    });
 }

@@ -6,7 +6,7 @@ pub mod temp;
 pub mod tile_effect;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((tile_effect::plugin, movement::plugin))
+    app.add_plugins((tile_effect::plugin, movement::plugin, temp::plugin))
         .add_observer(play_card);
 }
 

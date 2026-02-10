@@ -120,6 +120,7 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
     - next kill this turn will explode
 - holes
     - make a hole & trash 1 card
+- blocking?
 
 #### Inspo matrix
 
