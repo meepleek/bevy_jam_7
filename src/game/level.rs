@@ -1,5 +1,3 @@
-use bevy::color::palettes::css::CRIMSON;
-
 use crate::game::card;
 use crate::prelude::*;
 
@@ -30,15 +28,15 @@ fn spawn_level(
     }
 
     let grid = Grid::new(5, 5);
-    cmd.spawn((tile_rect(BLUE_400, TileEntityKind::Player), Player));
+    cmd.spawn((
+        Player,
+        Movement::from_direction(MovementDirection::All),
+        tile_rect(BLUE_400, TileEntityKind::Player),
+    ));
 
     for (x, y) in [/*(2, 1), (3, 3),*/ (0, 3)] {
-        cmd.spawn((
-            Enemy {
-                kind: EnemyKind::Chaser,
-            },
-            tile_rect(CRIMSON, TileEntityKind::Enemy),
-            Transform::from_translation(grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.)),
+        cmd.spawn(chaser_enemy(
+            grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.),
         ));
     }
 
@@ -65,7 +63,7 @@ fn spawn_level(
     next_phase.set(GameplayPhase::Gameplay);
 }
 
-fn tile_rect(color: impl Into<Color>, kind: TileEntityKind) -> impl Bundle {
+pub fn tile_rect(color: impl Into<Color>, kind: TileEntityKind) -> impl Bundle {
     (Sprite::from_color(color.into(), Vec2::splat(50.)), kind)
 }
 

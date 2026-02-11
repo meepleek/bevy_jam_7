@@ -8,6 +8,33 @@ pub(super) fn plugin(app: &mut App) {
     app.add_observer(move_action);
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum MovementDirection {
+    Orthogonal,
+    Diagonal,
+    All,
+}
+
+#[derive(Component, Debug)]
+pub struct Movement {
+    direction: MovementDirection,
+    tile_movement_speed_ms: u64,
+    tile_pause_ms: u64,
+}
+impl Movement {
+    pub fn from_direction(direction: MovementDirection) -> Self {
+        Self {
+            direction,
+            tile_movement_speed_ms: 300,
+            tile_pause_ms: 100,
+        }
+    }
+
+    pub fn direction(&self) -> MovementDirection {
+        self.direction
+    }
+}
+
 #[derive(Event, Debug)]
 pub struct MoveAction {
     pub agent_e: Entity,
@@ -18,13 +45,14 @@ fn move_action(
     trig: On<MoveAction>,
     mut cmd: Commands,
     mut grid: Single<&mut Grid>,
-    transform_q: Query<&GlobalTransform>,
+    agent_q: Query<(&GlobalTransform, &Movement)>,
 ) {
     // let target_world_pos = or_return!(grid.tile_to_world(trig.to));
     or_return!(grid.move_entity(trig.agent_e, trig.to));
 
     // create a path to move tile by tile
-    let start_world_pos = or_return!(transform_q.get(trig.agent_e)).translation();
+    let (agent_t, agent_movement) = or_return!(agent_q.get(trig.agent_e));
+    let start_world_pos = agent_t.translation();
     let start_tile = or_return!(grid.world_to_tile(start_world_pos.truncate()));
     // movement can be only ortho or diag, so signum should be ok to just get the values to 0/1 to get a direction
     let dir = (trig.to - start_tile).signum();
@@ -48,13 +76,23 @@ fn move_action(
     let (_, first_to) = world_path.pop_front().expect("empty move path");
     let tween = world_path.into_iter().fold(
         tween::delay_tween(
-            tween::get_absolute_translation_tween(start_world_pos, first_to, 300, None),
-            50,
+            tween::get_absolute_translation_tween(
+                start_world_pos,
+                first_to,
+                agent_movement.tile_movement_speed_ms,
+                None,
+            ),
+            agent_movement.tile_pause_ms,
         ),
         |t, (from, to)| {
             t.then(tween::delay_tween(
-                tween::get_absolute_translation_tween(from, to, 300, None),
-                50,
+                tween::get_absolute_translation_tween(
+                    from,
+                    to,
+                    agent_movement.tile_movement_speed_ms,
+                    None,
+                ),
+                agent_movement.tile_pause_ms,
             ))
         },
     );

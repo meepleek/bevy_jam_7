@@ -24,13 +24,6 @@ pub const DIRS: [Coords; 8] = [
     Coords::NEG_ONE,
 ];
 
-#[derive(Debug, Clone, Copy)]
-pub enum NeighbourDirection {
-    Orthogonal,
-    Diagonal,
-    All,
-}
-
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, (track_position, track_tile_entities));
 }
@@ -183,13 +176,13 @@ impl Grid {
         &self,
         tile: Coords,
         allowed_occupied_tile: Option<Coords>,
-        neigbour_dir: NeighbourDirection,
+        move_dir: MovementDirection,
         rng: &mut impl Rng,
     ) -> Vec<Coords> {
-        let dirs: &[Coords] = match neigbour_dir {
-            NeighbourDirection::Orthogonal => &DIRS_ORTHO,
-            NeighbourDirection::Diagonal => &DIRS_DIAG,
-            NeighbourDirection::All => &DIRS,
+        let dirs: &[Coords] = match move_dir {
+            MovementDirection::Orthogonal => &DIRS_ORTHO,
+            MovementDirection::Diagonal => &DIRS_DIAG,
+            MovementDirection::All => &DIRS,
         };
         let mut neighbours: Vec<_> = dirs
             .into_iter()
@@ -212,13 +205,13 @@ impl Grid {
         &self,
         start: Coords,
         end: Coords,
-        neigbour_dir: NeighbourDirection,
+        move_dir: MovementDirection,
         rng: &mut impl Rng,
     ) -> Option<Vec<Coords>> {
         dijkstra::dijkstra(
             &start,
             |tile| {
-                self.neighbours(*tile, Some(end), neigbour_dir, rng)
+                self.neighbours(*tile, Some(end), move_dir, rng)
                     .into_iter()
                     .map(|tile| (tile, 1))
             },
@@ -232,10 +225,10 @@ impl Grid {
         &self,
         start: Coords,
         end: Coords,
-        neigbour_dir: NeighbourDirection,
+        move_dir: MovementDirection,
         rng: &mut impl Rng,
     ) -> Option<Vec<Coords>> {
-        self.path_to_target(start, end, neigbour_dir, rng)
+        self.path_to_target(start, end, move_dir, rng)
             .and_then(|mut path| {
                 _ = path.pop();
                 if path.len() > 0 { Some(path) } else { None }
@@ -387,16 +380,16 @@ mod tests {
         board.within_bounds(tile.into())
     }
 
-    #[test_case((0, 2), NeighbourDirection::All, 0 => Some(vec![Coords::ONE, Coords::new(2, 2)]))]
-    #[test_case((1, 1), NeighbourDirection::All, 0 => Some(vec![Coords::new(0, 1), Coords::new(1, 2), Coords::new(2, 2)]))]
-    #[test_case((1, 1), NeighbourDirection::All, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
-    #[test_case((1, 1), NeighbourDirection::Orthogonal, 0 => Some(vec![Coords::new(0, 1), Coords::new(0, 2), Coords::new(1, 2), Coords::new(2, 2)]))]
-    #[test_case((1, 1), NeighbourDirection::Orthogonal, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
-    #[test_case((1, 1), NeighbourDirection::Diagonal, 0 => None)]
+    #[test_case((0, 2), MovementDirection::All, 0 => Some(vec![Coords::ONE, Coords::new(2, 2)]))]
+    #[test_case((1, 1), MovementDirection::All, 0 => Some(vec![Coords::new(0, 1), Coords::new(1, 2), Coords::new(2, 2)]))]
+    #[test_case((1, 1), MovementDirection::All, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
+    #[test_case((1, 1), MovementDirection::Orthogonal, 0 => Some(vec![Coords::new(0, 1), Coords::new(0, 2), Coords::new(1, 2), Coords::new(2, 2)]))]
+    #[test_case((1, 1), MovementDirection::Orthogonal, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
+    #[test_case((1, 1), MovementDirection::Diagonal, 0 => None)]
     #[traced_test]
     fn path_to_target(
         obstacle: (i16, i16),
-        neighour_dir: NeighbourDirection,
+        move_dir: MovementDirection,
         seed: u64,
     ) -> Option<Vec<Coords>> {
         let mut board = Grid::new(3, 3);
@@ -411,21 +404,21 @@ mod tests {
             .expect("Failed to place obstacle");
 
         let mut rng = StdRng::seed_from_u64(seed);
-        board.path_to_target(Coords::ZERO, (2, 2).into(), neighour_dir, &mut rng)
+        board.path_to_target(Coords::ZERO, (2, 2).into(), move_dir, &mut rng)
     }
 
-    #[test_case(3, Coords::ZERO, Coords::new(2, 2), Coords::ZERO, Coords::ONE, NeighbourDirection::Orthogonal, 0 => Some(
+    #[test_case(3, Coords::ZERO, Coords::new(2, 2), Coords::ZERO, Coords::ONE, MovementDirection::Orthogonal, 0 => Some(
         vec![
             Coords::new(0, 1),
             Coords::new(0, 2),
             Coords::new(1, 2),
         ]))]
-    #[test_case(5, Coords::new(0, 3), Coords::new(2, 2), Coords::new(2, 2), Coords::new(0, 3), NeighbourDirection::Orthogonal, 0 => Some(
+    #[test_case(5, Coords::new(0, 3), Coords::new(2, 2), Coords::new(2, 2), Coords::new(0, 3), MovementDirection::Orthogonal, 0 => Some(
         vec![
             Coords::new(1, 3),
             Coords::new(1, 2),
         ]))]
-    #[test_case(5, Coords::new(3, 4), Coords::new(3, 2), Coords::new(3, 2), Coords::new(3, 4), NeighbourDirection::Orthogonal, 0 => Some(
+    #[test_case(5, Coords::new(3, 4), Coords::new(3, 2), Coords::new(3, 2), Coords::new(3, 4), MovementDirection::Orthogonal, 0 => Some(
         vec![Coords::new(3, 3)]))]
     #[traced_test]
     fn path_next_to_target(
@@ -434,7 +427,7 @@ mod tests {
         target: impl Into<Coords>,
         player: impl Into<Coords>,
         enemy: impl Into<Coords>,
-        neighour_dir: NeighbourDirection,
+        move_dir: MovementDirection,
         seed: u64,
     ) -> Option<Vec<Coords>> {
         let mut board = Grid::new(size, size);
@@ -458,6 +451,6 @@ mod tests {
             .expect("Failed to place obstacle");
 
         let mut rng = StdRng::seed_from_u64(seed);
-        board.path_next_to_target(start.into(), target.into(), neighour_dir, &mut rng)
+        board.path_next_to_target(start.into(), target.into(), move_dir, &mut rng)
     }
 }

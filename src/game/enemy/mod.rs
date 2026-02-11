@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+use bevy::color::palettes::css::CRIMSON;
+
 use crate::{game::turn::TurnOrder, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
@@ -59,7 +61,11 @@ fn on_enemy_removed(ev: On<Remove, Enemy>, mut enemies: ResMut<Enemies>) {
     }
 }
 
-fn queue_actions(enemies: Res<Enemies>, mut action_queue: ResMut<EnemyActionQueue>) {
+fn queue_actions(
+    enemies: Res<Enemies>,
+    mut action_queue: ResMut<EnemyActionQueue>,
+    movement_q: Query<(), With<Movement>>,
+) {
     // queue abilities first
     for e in &enemies.0 {
         action_queue.push_back(EnemyAction {
@@ -69,10 +75,12 @@ fn queue_actions(enemies: Res<Enemies>, mut action_queue: ResMut<EnemyActionQueu
     }
     // queue movement
     for e in &enemies.0 {
-        action_queue.push_back(EnemyAction {
-            kind: EnemyActionKind::Move,
-            enemy_e: *e,
-        });
+        if movement_q.contains(*e) {
+            action_queue.push_back(EnemyAction {
+                kind: EnemyActionKind::Move,
+                enemy_e: *e,
+            });
+        }
     }
 }
 
@@ -82,7 +90,7 @@ fn process_queue(
     mut action_queue: ResMut<EnemyActionQueue>,
     time: Res<Time>,
     mut turn: ResMut<NextState<TurnOrder>>,
-    enemy_q: Query<(&Enemy, &GlobalTransform)>,
+    enemy_q: Query<(&Enemy, &GlobalTransform, Option<&Movement>)>,
     grid: Single<&Grid>,
     player_t: Single<&GlobalTransform, With<Player>>,
 ) {
@@ -91,20 +99,21 @@ fn process_queue(
         match action_queue.pop_front() {
             Some(action) => {
                 let mut rng = rng();
-                let (enemy, enemy_t) = or_return!(enemy_q.get(action.enemy_e));
+                let (enemy, enemy_t, enemy_movement) = or_return!(enemy_q.get(action.enemy_e));
                 let action_duration = match action.kind {
                     EnemyActionKind::Ability => {
                         tracing::warn!("doing a cool ability");
                         Duration::from_millis(100)
                     }
                     EnemyActionKind::Move => {
+                        let movement = or_return!(enemy_movement);
                         let tile = or_return!(grid.world_to_tile(enemy_t.translation().truncate()));
                         let player_tile =
                             or_return!(grid.world_to_tile(player_t.translation().truncate()));
                         let path = grid.path_next_to_target(
                             tile,
                             player_tile,
-                            NeighbourDirection::Orthogonal,
+                            movement.direction(),
                             &mut rng,
                         );
                         tracing::warn!(?tile, ?player_tile, ?path);
@@ -128,4 +137,15 @@ fn process_queue(
             }
         }
     }
+}
+
+pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
+    (
+        Enemy {
+            kind: EnemyKind::Chaser,
+        },
+        Movement::from_direction(MovementDirection::Diagonal),
+        tile_rect(CRIMSON, TileEntityKind::Enemy),
+        Transform::from_translation(pos),
+    )
 }
