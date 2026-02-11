@@ -141,11 +141,15 @@ fn play_selected_tile_card(
     match &card.trigger {
         CardEffectTrigger::TileSelection(tile_card_action) => {
             match tile_card_action {
-                Move { temp_offset, .. } => cmd.trigger(MoveAction {
-                    agent_e: *player,
-                    to: trig.selected_tile,
-                    temp_offset: *temp_offset,
-                }),
+                Move { temp_offset, .. } => {
+                    cmd.trigger(MoveAction {
+                        agent_e: *player,
+                        to: trig.selected_tile,
+                    });
+                    cmd.trigger(TempChangeAction {
+                        change: -(*temp_offset as i8),
+                    });
+                }
                 Attack {
                     attack,
                     temp_offset,
@@ -194,7 +198,8 @@ fn process_selected_tile_trigger_card(
                 .into_iter()
                 .map(|tile| player_tile + tile)
                 .filter_map(|tile| {
-                    if matches!(action.tile_target(), TileTarget::Empty) || grid.contains_die(tile)
+                    if matches!(action.tile_target(), TileTarget::Empty)
+                        || grid.contains_agent(tile)
                     {
                         grid.tile_to_world(tile).map(|pos| (tile, pos))
                     } else {

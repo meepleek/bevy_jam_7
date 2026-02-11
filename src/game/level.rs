@@ -32,7 +32,7 @@ fn spawn_level(
     let grid = Grid::new(5, 5);
     cmd.spawn((tile_rect(BLUE_400, TileEntityKind::Player), Player));
 
-    for (x, y) in [(2, 1), (3, 3), (1, 1)] {
+    for (x, y) in [/*(2, 1), (3, 3),*/ (0, 3)] {
         cmd.spawn((
             Enemy {
                 kind: EnemyKind::Chaser,

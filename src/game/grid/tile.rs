@@ -1,3 +1,5 @@
+use bevy::math::U16Vec2;
+
 use crate::prelude::tween::DespawnOnTweenCompleted;
 use crate::prelude::tween::get_relative_scale_anim;
 use crate::prelude::tween::get_relative_sprite_color_anim;
@@ -17,12 +19,41 @@ pub struct TileEntity {
 pub enum TileEntityKind {
     Player,
     Enemy,
-    #[allow(dead_code)]
     Wall,
 }
 
 #[derive(Component)]
 pub struct TileInteraction;
+
+pub struct TileIterator {
+    grid_size: U16Vec2,
+    tile: Coords,
+}
+impl Iterator for TileIterator {
+    type Item = Coords;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let size = self.grid_size.as_i16vec2();
+        if self.tile.y >= size.y as i16 {
+            None
+        } else {
+            let next = self.tile;
+            self.tile.x += 1;
+            if self.tile.x == size.x {
+                self.tile = (0, self.tile.y + 1).into();
+            }
+            Some(next)
+        }
+    }
+}
+impl TileIterator {
+    pub fn from_size(grid_size: impl Into<U16Vec2>) -> Self {
+        Self {
+            grid_size: grid_size.into(),
+            tile: Coords::ZERO,
+        }
+    }
+}
 
 fn hide_tile_highlighs_on_card_deselected(
     _trig: On<Remove, SelectedTileTriggerCard>,
@@ -35,5 +66,36 @@ fn hide_tile_highlighs_on_card_deselected(
             get_relative_scale_anim(Vec2::splat(0.1), 150, None),
             DespawnOnTweenCompleted::Itself,
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn iter() {
+        let tiles: Vec<_> = TileIterator::from_size((5, 3)).collect();
+        assert_eq!(
+            tiles,
+            [
+                (0, 0),
+                (1, 0),
+                (2, 0),
+                (3, 0),
+                (4, 0),
+                (0, 1),
+                (1, 1),
+                (2, 1),
+                (3, 1),
+                (4, 1),
+                (0, 2),
+                (1, 2),
+                (2, 2),
+                (3, 2),
+                (4, 2),
+            ]
+            .map(Into::into)
+        );
     }
 }

@@ -6,6 +6,7 @@ mod card;
 mod enemy;
 mod grid;
 mod level;
+mod movement;
 mod pause;
 mod player;
 mod turn;
@@ -17,12 +18,13 @@ pub type Coords = I16Vec2;
 pub mod prelude {
     pub use super::card::card::*;
     pub use super::card::effect::*;
-    pub use super::card::effect::{card_effect::*, movement::*, temp::*, tile_effect::*};
+    pub use super::card::effect::{card_effect::*, temp::*, tile_effect::*};
     pub use super::card::pile::*;
     pub use super::enemy::*;
     pub use super::grid::grid::*;
     pub use super::grid::tile::*;
     pub use super::level::*;
+    pub use super::movement::*;
     pub use super::pause::*;
     pub use super::player::*;
     pub use super::{Coords, GameplayPhase};
@@ -31,6 +33,7 @@ pub mod prelude {
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         level::plugin,
+        movement::plugin,
         pause::plugin,
         player::plugin,
         enemy::plugin,

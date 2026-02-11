@@ -1,9 +1,35 @@
 use bevy::math::U16Vec2;
 use bevy::platform::collections::HashMap;
+use pathfinding::directed::dijkstra;
 
 use crate::prelude::*;
 
 pub const TILE_SIZE: u16 = 64;
+
+pub const DIRS_ORTHO: [Coords; 4] = [Coords::NEG_Y, Coords::X, Coords::Y, Coords::NEG_X];
+pub const DIRS_DIAG: [Coords; 4] = [
+    Coords::ONE,
+    Coords::new(1, -1),
+    Coords::NEG_ONE,
+    Coords::new(-1, 1),
+];
+pub const DIRS: [Coords; 8] = [
+    Coords::NEG_Y,
+    Coords::new(1, -1),
+    Coords::X,
+    Coords::ONE,
+    Coords::Y,
+    Coords::new(-1, 1),
+    Coords::NEG_X,
+    Coords::NEG_ONE,
+];
+
+#[derive(Debug, Clone, Copy)]
+pub enum NeighbourDirection {
+    Orthogonal,
+    Diagonal,
+    All,
+}
 
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, (track_position, track_tile_entities));
@@ -71,7 +97,7 @@ impl Grid {
         self.occupied_tiles.get(&coords).cloned()
     }
 
-    pub fn contains_die(&self, coords: Coords) -> bool {
+    pub fn contains_agent(&self, coords: Coords) -> bool {
         self.coords_to_tile_entity(coords)
             .is_some_and(|tile_entity| {
                 matches!(
@@ -92,10 +118,7 @@ impl Grid {
         let y = half_size.y + self.center_global_position.y - pos.y;
         let pos_on_board = Vec2::new(x, y);
         let coords = (pos_on_board / TILE_SIZE as f32).floor().as_i16vec2();
-        if coords.min_element() < 0
-            || coords.x >= self.width as i16
-            || coords.y >= self.heigth as i16
-        {
+        if !self.within_bounds(coords) {
             return None;
         }
 
@@ -116,10 +139,7 @@ impl Grid {
     }
 
     pub fn can_place_at(&self, coords: Coords) -> Result<(), PlaceError> {
-        if coords.min_element() < 0
-            || coords.x >= self.width as i16
-            || coords.y >= self.heigth as i16
-        {
+        if !self.within_bounds(coords) {
             return Err(PlaceError::OutOfBounds);
         } else if self.occupied_tiles.contains_key(&coords) {
             return Err(PlaceError::Taken);
@@ -153,6 +173,106 @@ impl Grid {
 
     fn clear_tile(&mut self, coords: Coords) -> Option<TileEntity> {
         self.occupied_tiles.remove(&coords)
+    }
+
+    pub fn within_bounds(&self, tile: Coords) -> bool {
+        tile.min_element() >= 0 && tile.x < self.width as _ && tile.y < self.heigth as _
+    }
+
+    fn neighbours(
+        &self,
+        tile: Coords,
+        allowed_occupied_tile: Option<Coords>,
+        neigbour_dir: NeighbourDirection,
+        rng: &mut impl Rng,
+    ) -> Vec<Coords> {
+        let dirs: &[Coords] = match neigbour_dir {
+            NeighbourDirection::Orthogonal => &DIRS_ORTHO,
+            NeighbourDirection::Diagonal => &DIRS_DIAG,
+            NeighbourDirection::All => &DIRS,
+        };
+        let mut neighbours: Vec<_> = dirs
+            .into_iter()
+            .copied()
+            .filter_map(|dir| {
+                let target = tile + dir;
+                if allowed_occupied_tile.is_some_and(|t| t == target) {
+                    return Some(target);
+                }
+                self.can_place_at(target).ok().map(|_| target)
+            })
+            .collect();
+        if !neighbours.is_empty() {
+            neighbours.shuffle(rng);
+        }
+        neighbours
+    }
+
+    fn path_to_target(
+        &self,
+        start: Coords,
+        end: Coords,
+        neigbour_dir: NeighbourDirection,
+        rng: &mut impl Rng,
+    ) -> Option<Vec<Coords>> {
+        dijkstra::dijkstra(
+            &start,
+            |tile| {
+                self.neighbours(*tile, Some(end), neigbour_dir, rng)
+                    .into_iter()
+                    .map(|tile| (tile, 1))
+            },
+            |tile| *tile == end,
+        )
+        .map(|path| path.0.into_iter().skip(1).collect::<Vec<_>>())
+        .and_then(|path| if path.len() > 0 { Some(path) } else { None })
+    }
+
+    pub fn path_next_to_target(
+        &self,
+        start: Coords,
+        end: Coords,
+        neigbour_dir: NeighbourDirection,
+        rng: &mut impl Rng,
+    ) -> Option<Vec<Coords>> {
+        self.path_to_target(start, end, neigbour_dir, rng)
+            .and_then(|mut path| {
+                _ = path.pop();
+                if path.len() > 0 { Some(path) } else { None }
+            })
+    }
+
+    pub fn iter_tiles(&self) -> TileIterator {
+        TileIterator::from_size((self.width, self.heigth))
+    }
+
+    pub fn ascii_debug_map(&self) -> String {
+        let size = self.size();
+        let mut dbg_map = String::with_capacity(size.element_product() as _);
+        let x_axis = (0..self.width)
+            .map(|i| (i % 10).to_string())
+            .collect::<String>();
+        dbg_map.push_str(&format!("  {}\n", &x_axis));
+        dbg_map.push_str(" 0");
+        let mut prev_y = 0;
+        for tile in self.iter_tiles() {
+            if tile.y != prev_y {
+                prev_y = tile.y;
+                dbg_map.push_str(&format!("{:2}", tile.y - 1));
+                dbg_map.push('\n');
+                dbg_map.push_str(&format!("{:2}", tile.y));
+            }
+            dbg_map.push(match self.occupied_tiles.get(&tile) {
+                Some(TileEntity { kind, .. }) => match kind {
+                    TileEntityKind::Player => '@',
+                    TileEntityKind::Enemy => '!',
+                    TileEntityKind::Wall => '#',
+                },
+                None => '.',
+            });
+        }
+        dbg_map.push_str(&format!("\n  {}", &x_axis));
+        dbg_map
     }
 }
 
@@ -249,5 +369,94 @@ mod tests {
             .expect("Place first piece");
 
         assert_eq!(board.can_place_at(coords), Err(PlaceError::Taken));
+    }
+
+    #[test_case(3, (0, 0) => true)]
+    #[test_case(3, (0, 2) => true)]
+    #[test_case(3, (2, 2) => true)]
+    #[test_case(3, (1, 1) => true)]
+    #[test_case(3, (3, 0) => false)]
+    #[test_case(3, (0, 3) => false)]
+    #[test_case(3, (-1, 0) => false)]
+    #[test_case(3, (0, -1) => false)]
+    #[traced_test]
+    fn within_bounds(size: u16, tile: (i16, i16)) -> bool {
+        let board = Grid::new(size, size);
+        board.within_bounds(tile.into())
+    }
+
+    #[test_case((0, 2), NeighbourDirection::All, 0 => Some(vec![Coords::ONE, Coords::new(2, 2)]))]
+    #[test_case((1, 1), NeighbourDirection::All, 0 => Some(vec![Coords::new(0, 1), Coords::new(1, 2), Coords::new(2, 2)]))]
+    #[test_case((1, 1), NeighbourDirection::All, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
+    #[test_case((1, 1), NeighbourDirection::Orthogonal, 0 => Some(vec![Coords::new(0, 1), Coords::new(0, 2), Coords::new(1, 2), Coords::new(2, 2)]))]
+    #[test_case((1, 1), NeighbourDirection::Orthogonal, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
+    #[test_case((1, 1), NeighbourDirection::Diagonal, 0 => None)]
+    #[traced_test]
+    fn path_to_target(
+        obstacle: (i16, i16),
+        neighour_dir: NeighbourDirection,
+        seed: u64,
+    ) -> Option<Vec<Coords>> {
+        let mut board = Grid::new(3, 3);
+        _ = board
+            .place_entity(
+                TileEntity {
+                    entity: Entity::PLACEHOLDER,
+                    kind: TileEntityKind::Wall,
+                },
+                obstacle.into(),
+            )
+            .expect("Failed to place obstacle");
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        board.path_to_target(Coords::ZERO, (2, 2).into(), neighour_dir, &mut rng)
+    }
+
+    #[test_case(3, Coords::ZERO, Coords::new(2, 2), Coords::ZERO, Coords::ONE, NeighbourDirection::Orthogonal, 0 => Some(
+        vec![
+            Coords::new(0, 1),
+            Coords::new(0, 2),
+            Coords::new(1, 2),
+        ]))]
+    #[test_case(5, Coords::new(0, 3), Coords::new(2, 2), Coords::new(2, 2), Coords::new(0, 3), NeighbourDirection::Orthogonal, 0 => Some(
+        vec![
+            Coords::new(1, 3),
+            Coords::new(1, 2),
+        ]))]
+    #[test_case(5, Coords::new(3, 4), Coords::new(3, 2), Coords::new(3, 2), Coords::new(3, 4), NeighbourDirection::Orthogonal, 0 => Some(
+        vec![Coords::new(3, 3)]))]
+    #[traced_test]
+    fn path_next_to_target(
+        size: u16,
+        start: impl Into<Coords>,
+        target: impl Into<Coords>,
+        player: impl Into<Coords>,
+        enemy: impl Into<Coords>,
+        neighour_dir: NeighbourDirection,
+        seed: u64,
+    ) -> Option<Vec<Coords>> {
+        let mut board = Grid::new(size, size);
+        _ = board
+            .place_entity(
+                TileEntity {
+                    entity: Entity::PLACEHOLDER,
+                    kind: TileEntityKind::Player,
+                },
+                player.into(),
+            )
+            .expect("Failed to place player");
+        _ = board
+            .place_entity(
+                TileEntity {
+                    entity: Entity::PLACEHOLDER,
+                    kind: TileEntityKind::Enemy,
+                },
+                enemy.into(),
+            )
+            .expect("Failed to place obstacle");
+        println!("{}", board.ascii_debug_map());
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        board.path_next_to_target(start.into(), target.into(), neighour_dir, &mut rng)
     }
 }

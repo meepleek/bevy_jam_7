@@ -77,25 +77,49 @@ fn queue_actions(enemies: Res<Enemies>, mut action_queue: ResMut<EnemyActionQueu
 }
 
 fn process_queue(
+    mut cmd: Commands,
     mut action_timer: Local<Timer>,
     mut action_queue: ResMut<EnemyActionQueue>,
     time: Res<Time>,
     mut turn: ResMut<NextState<TurnOrder>>,
-    enemy_q: Query<&Enemy>,
+    enemy_q: Query<(&Enemy, &GlobalTransform)>,
+    grid: Single<&Grid>,
+    player_t: Single<&GlobalTransform, With<Player>>,
 ) {
     action_timer.tick(time.delta());
     if action_timer.is_finished() {
         match action_queue.pop_front() {
             Some(action) => {
-                let enemy = or_return!(enemy_q.get(action.enemy_e));
+                let mut rng = rng();
+                let (enemy, enemy_t) = or_return!(enemy_q.get(action.enemy_e));
                 let action_duration = match action.kind {
                     EnemyActionKind::Ability => {
                         tracing::warn!("doing a cool ability");
                         Duration::from_millis(100)
                     }
                     EnemyActionKind::Move => {
-                        tracing::warn!("schmoving");
-                        enemy.kind.tile_movement_duration_ms()
+                        println!("{}", grid.ascii_debug_map());
+                        let tile = or_return!(grid.world_to_tile(enemy_t.translation().truncate()));
+                        let player_tile =
+                            or_return!(grid.world_to_tile(player_t.translation().truncate()));
+                        let path = grid.path_next_to_target(
+                            tile,
+                            player_tile,
+                            NeighbourDirection::Orthogonal,
+                            &mut rng,
+                        );
+                        tracing::warn!(?tile, ?player_tile, ?path);
+                        if let Some(path) = path
+                            && let Some(to) = path.first()
+                        {
+                            cmd.trigger(MoveAction {
+                                agent_e: action.enemy_e,
+                                to: *to,
+                            });
+                            enemy.kind.tile_movement_duration_ms()
+                        } else {
+                            return;
+                        }
                     }
                 };
                 action_timer.set_duration(action_duration);

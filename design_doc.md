@@ -43,6 +43,11 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
     - looking for colonoscopy pics
     - smearing nutella on a crying child
     - checking the dishwasher for rats
+- die screen - darks souls spoof
+    - "You (were) fried"
+    - "You (were) dried"
+    - "You (were) frozen-dried"
+
     
 ## Vibe to go for
 
