@@ -25,7 +25,8 @@ pub const DIRS: [Coords; 8] = [
 ];
 
 pub fn plugin(app: &mut App) {
-    app.add_systems(Update, (track_position, track_tile_entities));
+    app.add_systems(Update, track_grid_position)
+        .add_systems(Last, add_new_tile_entities_to_grid);
 }
 
 #[derive(Component)]
@@ -271,29 +272,29 @@ impl Grid {
     }
 }
 
-fn track_position(mut board_q: Query<(&mut Grid, &GlobalTransform), Changed<GlobalTransform>>) {
+fn track_grid_position(
+    mut board_q: Query<(&mut Grid, &GlobalTransform), Changed<GlobalTransform>>,
+) {
     for (mut board, t) in &mut board_q {
         board.center_global_position = t.translation().truncate();
     }
 }
 
-fn track_tile_entities(
-    entity_q: Query<(Entity, &TileEntityKind, &GlobalTransform), Changed<GlobalTransform>>,
+fn add_new_tile_entities_to_grid(
+    entity_q: Query<(Entity, &TileEntityKind, &GlobalTransform), Added<TileEntityKind>>,
     mut grid: Single<&mut Grid>,
 ) {
-    for (e, kind, t) in &entity_q {
-        let tile = or_continue!(grid.world_to_tile(t.translation().truncate()));
-        if grid.entities.contains_key(&e) {
-            or_continue!(grid.move_entity(e, tile));
-        } else {
-            or_continue!(grid.place_entity(
-                TileEntity {
-                    entity: e,
-                    kind: *kind,
-                },
-                tile,
-            ));
-        }
+    for (e, kind, t) in entity_q {
+        tracing::warn!("added tile entity");
+        let tile = or_return!(grid.world_to_tile(t.translation().truncate()));
+        tracing::warn!(?kind, ?tile, "added tile entity 2");
+        or_return!(grid.place_entity(
+            TileEntity {
+                entity: e,
+                kind: *kind,
+            },
+            tile,
+        ));
     }
 }
 

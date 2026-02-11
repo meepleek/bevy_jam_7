@@ -34,7 +34,6 @@ fn move_action(
     mut grid: Single<&mut Grid>,
     agent_q: Query<(&GlobalTransform, &Movement)>,
 ) {
-    // let target_world_pos = or_return!(grid.tile_to_world(trig.to));
     or_return!(grid.move_entity(trig.agent_e, trig.to));
 
     // create a path to move tile by tile

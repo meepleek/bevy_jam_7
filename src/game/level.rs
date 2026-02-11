@@ -32,7 +32,8 @@ fn spawn_level(
         Player,
         Movement::default(),
         TileDirection::All,
-        tile_rect(BLUE_400, TileEntityKind::Player),
+        TileEntityKind::Player,
+        tile_rect(BLUE_400),
     ));
 
     for (x, y) in [/*(2, 1), (3, 3),*/ (0, 3)] {
@@ -64,8 +65,8 @@ fn spawn_level(
     next_phase.set(GameplayPhase::Gameplay);
 }
 
-pub fn tile_rect(color: impl Into<Color>, kind: TileEntityKind) -> impl Bundle {
-    (Sprite::from_color(color.into(), Vec2::splat(50.)), kind)
+pub fn tile_rect(color: impl Into<Color>) -> impl Bundle {
+    Sprite::from_color(color.into(), Vec2::splat(50.))
 }
 
 fn starting_debug_deck() -> Vec<CardEffectTrigger> {

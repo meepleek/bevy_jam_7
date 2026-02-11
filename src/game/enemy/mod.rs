@@ -141,7 +141,8 @@ pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
         },
         Movement::default(),
         TileDirection::Orthogonal,
-        tile_rect(CRIMSON, TileEntityKind::Enemy),
+        TileEntityKind::Enemy,
+        tile_rect(CRIMSON),
         Transform::from_translation(pos),
     )
 }
