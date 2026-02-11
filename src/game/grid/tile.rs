@@ -9,6 +9,13 @@ pub fn plugin(app: &mut App) {
     app.add_observer(hide_tile_highlighs_on_card_deselected);
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum TileDirection {
+    Orthogonal,
+    Diagonal,
+    All,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TileEntity {
     pub entity: Entity,

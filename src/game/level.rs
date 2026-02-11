@@ -30,7 +30,7 @@ fn spawn_level(
     let grid = Grid::new(5, 5);
     cmd.spawn((
         Player,
-        Movement::from_direction(MovementDirection::All),
+        Movement::from_direction(TileDirection::All),
         tile_rect(BLUE_400, TileEntityKind::Player),
     ));
 

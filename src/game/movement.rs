@@ -8,21 +8,14 @@ pub(super) fn plugin(app: &mut App) {
     app.add_observer(move_action);
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum MovementDirection {
-    Orthogonal,
-    Diagonal,
-    All,
-}
-
 #[derive(Component, Debug)]
 pub struct Movement {
-    direction: MovementDirection,
+    direction: TileDirection,
     tile_movement_speed_ms: u64,
     tile_pause_ms: u64,
 }
 impl Movement {
-    pub fn from_direction(direction: MovementDirection) -> Self {
+    pub fn from_direction(direction: TileDirection) -> Self {
         Self {
             direction,
             tile_movement_speed_ms: 300,
@@ -30,7 +23,7 @@ impl Movement {
         }
     }
 
-    pub fn direction(&self) -> MovementDirection {
+    pub fn direction(&self) -> TileDirection {
         self.direction
     }
 }
