@@ -98,9 +98,7 @@ fn play_card(
     let card = or_return!(card_q.get(trig.0));
     match &card.trigger {
         CardEffectTrigger::CardSelection(action) => match action {
-            HealSelf(heal) => cmd.trigger(TempChangeAction {
-                change: *heal as i8,
-            }),
+            TempOffset(offset) => cmd.trigger(TempChangeAction { change: *offset }),
         },
         CardEffectTrigger::TileSelection(_) => {
             error!(?card, "Card should not have been played on selection");

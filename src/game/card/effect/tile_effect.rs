@@ -70,7 +70,6 @@ pub enum TileCardEffect {
     },
     Attack {
         target: EffectTarget,
-        attack: u8,
         temp_offset: i8,
     },
 }
@@ -137,20 +136,16 @@ fn play_selected_tile_card(
                         to: trig.selected_tile,
                     });
                     cmd.trigger(TempChangeAction {
-                        change: -(*temp_offset as i8),
+                        change: *temp_offset,
                     });
                 }
                 Attack {
-                    attack,
                     temp_offset,
                     // poison,
                     ..
                 } => {
                     cmd.trigger(TempChangeAction {
-                        change: -(*attack as i8),
-                    });
-                    cmd.trigger(TempChangeAction {
-                        change: -*temp_offset,
+                        change: *temp_offset,
                     });
                 }
             }
