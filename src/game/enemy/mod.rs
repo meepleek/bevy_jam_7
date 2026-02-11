@@ -117,6 +117,7 @@ fn process_queue(
                     }
                 };
                 action_timer.set_duration(action_duration);
+                action_timer.reset();
             }
             None => {
                 turn.set(TurnOrder::Player);
