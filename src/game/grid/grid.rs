@@ -242,10 +242,12 @@ impl Grid {
             })
     }
 
+    #[allow(dead_code)]
     pub fn iter_tiles(&self) -> TileIterator {
         TileIterator::from_size((self.width, self.heigth))
     }
 
+    #[allow(dead_code)]
     pub fn ascii_debug_map(&self) -> String {
         let size = self.size();
         let mut dbg_map = String::with_capacity(size.element_product() as _);
