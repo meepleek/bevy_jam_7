@@ -10,7 +10,7 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component, Debug)]
 pub struct Movement {
-    tile_movement_speed_ms: u64,
+    pub tile_movement_speed_ms: u64,
     tile_pause_ms: u64,
 }
 impl Default for Movement {

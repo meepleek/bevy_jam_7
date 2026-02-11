@@ -13,24 +13,8 @@ pub(super) fn plugin(app: &mut App) {
         .add_observer(on_enemy_removed);
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum EnemyKind {
-    /// Short range meelee
-    Chaser,
-}
-impl EnemyKind {
-    // if some enemies can't move, then this could return Option
-    pub fn tile_movement_duration_ms(&self) -> Duration {
-        Duration::from_millis(match self {
-            EnemyKind::Chaser => 500,
-        })
-    }
-}
-
-#[derive(Component, Debug)]
-pub struct Enemy {
-    pub kind: EnemyKind,
-}
+#[derive(Component)]
+pub struct Enemy;
 
 #[derive(Resource, Deref, DerefMut, Debug, Default)]
 pub struct Enemies(Vec<Entity>);
@@ -90,7 +74,12 @@ fn process_queue(
     mut action_queue: ResMut<EnemyActionQueue>,
     time: Res<Time>,
     mut turn: ResMut<NextState<TurnOrder>>,
-    enemy_q: Query<(&Enemy, &GlobalTransform, Option<&TileDirection>)>,
+    enemy_q: Query<(
+        &Enemy,
+        &GlobalTransform,
+        Option<&TileDirection>,
+        Option<&Movement>,
+    )>,
     grid: Single<&Grid>,
     player_t: Single<&GlobalTransform, With<Player>>,
 ) {
@@ -99,7 +88,8 @@ fn process_queue(
         match action_queue.pop_front() {
             Some(action) => {
                 let mut rng = rng();
-                let (enemy, enemy_t, enemy_dir) = or_return!(enemy_q.get(action.enemy_e));
+                let (enemy, enemy_t, enemy_dir, enemy_movement) =
+                    or_return!(enemy_q.get(action.enemy_e));
                 let action_duration = match action.kind {
                     EnemyActionKind::Ability => {
                         tracing::warn!("doing a cool ability");
@@ -107,6 +97,7 @@ fn process_queue(
                     }
                     EnemyActionKind::Move => {
                         let tile_dir = or_return!(enemy_dir);
+                        let movement = or_return!(enemy_movement);
                         let tile = or_return!(grid.world_to_tile(enemy_t.translation().truncate()));
                         let player_tile =
                             or_return!(grid.world_to_tile(player_t.translation().truncate()));
@@ -119,7 +110,8 @@ fn process_queue(
                                 agent_e: action.enemy_e,
                                 to: *to,
                             });
-                            enemy.kind.tile_movement_duration_ms()
+                            // todo: might have to update this if an enemy can move multiple tiles
+                            Duration::from_millis(movement.tile_movement_speed_ms)
                         } else {
                             return;
                         }
@@ -136,9 +128,7 @@ fn process_queue(
 
 pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
     (
-        Enemy {
-            kind: EnemyKind::Chaser,
-        },
+        Enemy,
         Movement::default(),
         TileDirection::Orthogonal,
         TileEntityKind::Enemy,
