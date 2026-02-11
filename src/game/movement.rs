@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use bevy_tweening::Animator;
+use bevy_tweening::{Animator, Delay, Sequence, Tracks};
 
 use crate::prelude::*;
 
@@ -19,6 +19,31 @@ impl Default for Movement {
             tile_movement_speed_ms: 300,
             tile_pause_ms: 100,
         }
+    }
+}
+impl Movement {
+    pub fn hop_tween(&self, from: Vec3, to: Vec2) -> Sequence<Transform> {
+        Sequence::from_single(Tracks::new([
+            Sequence::from_single(tween::get_absolute_translation_tween(
+                from,
+                to,
+                self.tile_movement_speed_ms,
+                None,
+            )),
+            tween::get_relative_scale_tween(
+                Vec2::ONE * 1.25,
+                self.tile_movement_speed_ms / 3,
+                Some(EaseFunction::QuadraticIn),
+            )
+            .then(tween::delay_tween(
+                tween::get_relative_scale_tween(
+                    Vec2::ONE * 1.0,
+                    self.tile_movement_speed_ms / 4,
+                    Some(EaseFunction::QuadraticOut),
+                ),
+                self.tile_movement_speed_ms / 3,
+            )),
+        ]))
     }
 }
 
@@ -61,25 +86,12 @@ fn move_action(
     // start from the current position instead of snapping to the first tile
     let (_, first_to) = world_path.pop_front().expect("empty move path");
     let tween = world_path.into_iter().fold(
-        tween::delay_tween(
-            tween::get_absolute_translation_tween(
-                start_world_pos,
-                first_to,
-                agent_movement.tile_movement_speed_ms,
-                None,
-            ),
-            agent_movement.tile_pause_ms,
-        ),
+        agent_movement.hop_tween(start_world_pos, first_to),
         |t, (from, to)| {
-            t.then(tween::delay_tween(
-                tween::get_absolute_translation_tween(
-                    from,
-                    to,
-                    agent_movement.tile_movement_speed_ms,
-                    None,
-                ),
-                agent_movement.tile_pause_ms,
-            ))
+            t.then(
+                Delay::new(Duration::from_millis(agent_movement.tile_pause_ms))
+                    .then(agent_movement.hop_tween(from, to)),
+            )
         },
     );
     or_return!(cmd.get_entity(trig.agent_e)).insert(Animator::new(tween));
