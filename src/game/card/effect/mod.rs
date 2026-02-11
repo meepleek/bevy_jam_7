@@ -63,7 +63,7 @@ impl TileInteractionPalette {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum EffectDirection {
     #[allow(dead_code)]
     Area,
@@ -72,7 +72,7 @@ pub enum EffectDirection {
     Diagonal,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum EffectReach {
     Exact(u8),
     Range(u8),

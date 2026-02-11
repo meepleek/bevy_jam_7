@@ -6,29 +6,73 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 #[derive(Debug, Clone)]
+pub struct EffectTarget {
+    pub reach: EffectReach,
+    pub direction: EffectDirection,
+}
+impl EffectTarget {
+    pub fn target_tiles(&self) -> Vec<Coords> {
+        let range = match self.reach {
+            EffectReach::Exact(val) => val as i16..=val as i16,
+            EffectReach::Range(max) => 1..=max as i16,
+        };
+        match self.direction {
+            EffectDirection::Area => match self.reach {
+                EffectReach::Exact(val) => {
+                    let val = val as i16;
+                    let range = -val..=val;
+                    let mut res = HashSet::with_capacity(val as usize * 2 * 5);
+                    res.extend(
+                        range
+                            .clone()
+                            .flat_map(|x| [-val, val].map(|y| Coords::new(x, y))),
+                    );
+                    res.extend(range.flat_map(|y| [-val, val].map(|x| Coords::new(x, y))));
+                    res.into_iter().collect()
+                }
+                EffectReach::Range(max) => {
+                    let max = max as i16;
+                    let range = -max..=max;
+                    range
+                        .clone()
+                        .flat_map(|y| range.clone().map(move |x| (x, y).into()))
+                        .filter(|tile| tile != &Coords::ZERO)
+                        .collect()
+                }
+            },
+            EffectDirection::Orthogonal => range
+                .flat_map(|i| {
+                    [(0, -1), (0, 1), (-1, 0), (1, 0)]
+                        .map(|(sign_x, sign_y)| Coords::new(sign_x, sign_y) * i)
+                })
+                .collect(),
+            EffectDirection::Diagonal => range
+                .flat_map(|i| {
+                    [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+                        .map(|(sign_x, sign_y)| Coords::new(sign_x, sign_y) * i)
+                })
+                .collect(),
+        }
+    }
+
+    pub fn target_tiles_with_center(&self) -> Vec<Coords> {
+        let mut tiles = self.target_tiles();
+        tiles.push(Coords::ZERO);
+        tiles
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum TileCardEffect {
     Move {
-        reach: EffectReach,
-        direction: EffectDirection,
+        target: EffectTarget,
         temp_offset: i8,
     },
     Attack {
-        reach: EffectReach,
-        direction: EffectDirection,
+        target: EffectTarget,
         attack: u8,
         temp_offset: i8,
     },
-    #[allow(dead_code)]
-    Heal {
-        reach: EffectReach,
-        direction: EffectDirection,
-        heal: u8,
-    },
-    // Reroll {
-    //     reach: EffectReach,
-    //     direction: EffectDirection,
-    //     temp_offset: i8,
-    // },
 }
 impl CardEffectCommon for TileCardEffect {
     fn title(&self) -> &str {
@@ -36,7 +80,6 @@ impl CardEffectCommon for TileCardEffect {
         match self {
             Move { .. } => "Move",
             Attack { .. } => "Attack",
-            Heal { .. } => "Heal",
         }
     }
 
@@ -44,7 +87,6 @@ impl CardEffectCommon for TileCardEffect {
         use TileCardEffect::*;
         match self {
             Move { temp_offset, .. } | Attack { temp_offset, .. } => Some(-(*temp_offset)),
-            Heal { heal, .. } => Some(*heal as i8),
         }
     }
 }
@@ -54,68 +96,17 @@ impl TileCardEffect {
 
         match self {
             Move { .. } => TileTarget::Empty,
-            Attack { .. } | Heal { .. } => TileTarget::Enemy,
+            Attack { .. } => TileTarget::Enemy,
         }
     }
 
     pub fn tiles(&self) -> Vec<Coords> {
         use TileCardEffect::*;
         match self {
-            Move {
-                reach, direction, ..
-            }
-            | Attack {
-                reach, direction, ..
-            }
-            | Heal {
-                reach, direction, ..
-            } => {
-                let range = match *reach {
-                    EffectReach::Exact(val) => val as i16..=val as i16,
-                    EffectReach::Range(max) => 1..=max as i16,
-                };
-                let mut tiles: Vec<_> = match direction {
-                    EffectDirection::Area => match *reach {
-                        EffectReach::Exact(val) => {
-                            let val = val as i16;
-                            let range = -val..=val;
-                            let mut res = HashSet::with_capacity(val as usize * 2 * 5);
-                            res.extend(
-                                range
-                                    .clone()
-                                    .flat_map(|x| [-val, val].map(|y| Coords::new(x, y))),
-                            );
-                            res.extend(range.flat_map(|y| [-val, val].map(|x| Coords::new(x, y))));
-                            res.into_iter().collect()
-                        }
-                        EffectReach::Range(max) => {
-                            let max = max as i16;
-                            let range = -max..=max;
-                            range
-                                .clone()
-                                .flat_map(|y| range.clone().map(move |x| (x, y).into()))
-                                .filter(|tile| tile != &Coords::ZERO)
-                                .collect()
-                        }
-                    },
-                    EffectDirection::Orthogonal => range
-                        .flat_map(|i| {
-                            [(0, -1), (0, 1), (-1, 0), (1, 0)]
-                                .map(|(sign_x, sign_y)| Coords::new(sign_x, sign_y) * i)
-                        })
-                        .collect(),
-                    EffectDirection::Diagonal => range
-                        .flat_map(|i| {
-                            [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-                                .map(|(sign_x, sign_y)| Coords::new(sign_x, sign_y) * i)
-                        })
-                        .collect(),
-                };
-                if matches!(self.tile_target(), TileTarget::Enemy) {
-                    tiles.push(Coords::ZERO);
-                }
-                tiles
-            }
+            Move { target, .. } | Attack { target, .. } => match self.tile_target() {
+                TileTarget::Empty => target.target_tiles(),
+                TileTarget::Enemy => target.target_tiles_with_center(),
+            },
         }
     }
 
@@ -123,7 +114,6 @@ impl TileCardEffect {
         use TileCardEffect::*;
         match self {
             Move { .. } => TileInteractionPalette::new(INDIGO_400, INDIGO_800),
-            Heal { .. } => TileInteractionPalette::new(LIME_400, GREEN_800),
             Attack { .. } => TileInteractionPalette::new(ROSE_300, RED_400),
         }
     }
@@ -161,11 +151,6 @@ fn play_selected_tile_card(
                     });
                     cmd.trigger(TempChangeAction {
                         change: -*temp_offset,
-                    });
-                }
-                Heal { heal, .. } => {
-                    cmd.trigger(TempChangeAction {
-                        change: *heal as i8,
                     });
                 }
             }

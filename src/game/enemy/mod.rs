@@ -16,6 +16,11 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct Enemy;
 
+#[derive(Component, Debug, Clone, Copy)]
+pub enum EnemyAbility {
+    Attack { reach: EffectReach, temp_offset: i8 },
+}
+
 #[derive(Resource, Deref, DerefMut, Debug, Default)]
 pub struct Enemies(Vec<Entity>);
 
@@ -74,12 +79,7 @@ fn process_queue(
     mut action_queue: ResMut<EnemyActionQueue>,
     time: Res<Time>,
     mut turn: ResMut<NextState<TurnOrder>>,
-    enemy_q: Query<(
-        &Enemy,
-        &GlobalTransform,
-        Option<&TileDirection>,
-        Option<&Movement>,
-    )>,
+    enemy_q: Query<(&GlobalTransform, Option<&TileDirection>, Option<&Movement>)>,
     grid: Single<&Grid>,
     player_t: Single<&GlobalTransform, With<Player>>,
 ) {
@@ -88,8 +88,7 @@ fn process_queue(
         match action_queue.pop_front() {
             Some(action) => {
                 let mut rng = rng();
-                let (enemy, enemy_t, enemy_dir, enemy_movement) =
-                    or_return!(enemy_q.get(action.enemy_e));
+                let (enemy_t, enemy_dir, enemy_movement) = or_return!(enemy_q.get(action.enemy_e));
                 let action_duration = match action.kind {
                     EnemyActionKind::Ability => {
                         tracing::warn!("doing a cool ability");
