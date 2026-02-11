@@ -454,7 +454,6 @@ mod tests {
                 enemy.into(),
             )
             .expect("Failed to place obstacle");
-        println!("{}", board.ascii_debug_map());
 
         let mut rng = StdRng::seed_from_u64(seed);
         board.path_next_to_target(start.into(), target.into(), neighour_dir, &mut rng)

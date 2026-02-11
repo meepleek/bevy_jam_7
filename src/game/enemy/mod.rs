@@ -98,7 +98,6 @@ fn process_queue(
                         Duration::from_millis(100)
                     }
                     EnemyActionKind::Move => {
-                        println!("{}", grid.ascii_debug_map());
                         let tile = or_return!(grid.world_to_tile(enemy_t.translation().truncate()));
                         let player_tile =
                             or_return!(grid.world_to_tile(player_t.translation().truncate()));
