@@ -9,7 +9,10 @@ pub fn plugin(app: &mut App) {
     app.add_observer(hide_tile_highlighs_on_card_deselected);
 }
 
-#[derive(Debug, Clone, Copy)]
+// use this as a single source of truth for both the movement & ability direction
+// to avoid tricky combos like ortho movement + diag attack that could lead to buggy pathfinding
+// this should also simplify the UI & mental overhead for players
+#[derive(Component, Debug, Clone, Copy)]
 pub enum TileDirection {
     Orthogonal,
     Diagonal,

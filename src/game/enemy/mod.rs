@@ -90,7 +90,7 @@ fn process_queue(
     mut action_queue: ResMut<EnemyActionQueue>,
     time: Res<Time>,
     mut turn: ResMut<NextState<TurnOrder>>,
-    enemy_q: Query<(&Enemy, &GlobalTransform, Option<&Movement>)>,
+    enemy_q: Query<(&Enemy, &GlobalTransform, Option<&TileDirection>)>,
     grid: Single<&Grid>,
     player_t: Single<&GlobalTransform, With<Player>>,
 ) {
@@ -99,23 +99,18 @@ fn process_queue(
         match action_queue.pop_front() {
             Some(action) => {
                 let mut rng = rng();
-                let (enemy, enemy_t, enemy_movement) = or_return!(enemy_q.get(action.enemy_e));
+                let (enemy, enemy_t, enemy_dir) = or_return!(enemy_q.get(action.enemy_e));
                 let action_duration = match action.kind {
                     EnemyActionKind::Ability => {
                         tracing::warn!("doing a cool ability");
                         Duration::from_millis(100)
                     }
                     EnemyActionKind::Move => {
-                        let movement = or_return!(enemy_movement);
+                        let tile_dir = or_return!(enemy_dir);
                         let tile = or_return!(grid.world_to_tile(enemy_t.translation().truncate()));
                         let player_tile =
                             or_return!(grid.world_to_tile(player_t.translation().truncate()));
-                        let path = grid.path_next_to_target(
-                            tile,
-                            player_tile,
-                            movement.direction(),
-                            &mut rng,
-                        );
+                        let path = grid.path_next_to_target(tile, player_tile, *tile_dir, &mut rng);
                         tracing::warn!(?tile, ?player_tile, ?path);
                         if let Some(path) = path
                             && let Some(to) = path.first()
@@ -144,7 +139,8 @@ pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
         Enemy {
             kind: EnemyKind::Chaser,
         },
-        Movement::from_direction(TileDirection::Orthogonal),
+        Movement::default(),
+        TileDirection::Orthogonal,
         tile_rect(CRIMSON, TileEntityKind::Enemy),
         Transform::from_translation(pos),
     )

@@ -10,21 +10,15 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component, Debug)]
 pub struct Movement {
-    direction: TileDirection,
     tile_movement_speed_ms: u64,
     tile_pause_ms: u64,
 }
-impl Movement {
-    pub fn from_direction(direction: TileDirection) -> Self {
+impl Default for Movement {
+    fn default() -> Self {
         Self {
-            direction,
             tile_movement_speed_ms: 300,
             tile_pause_ms: 100,
         }
-    }
-
-    pub fn direction(&self) -> TileDirection {
-        self.direction
     }
 }
 
