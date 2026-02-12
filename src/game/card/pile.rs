@@ -1,11 +1,11 @@
-use std::num::NonZero;
-use std::num::NonZeroU8;
-
+use bevy::ecs::system::SystemParam;
 use bevy::time::common_conditions::repeating_after_delay;
 use bevy_tweening::Animator;
 use bevy_tweening::BoxedTweenable;
 use bevy_tweening::Sequence;
 use bevy_tweening::Tracks;
+use std::num::NonZero;
+use std::num::NonZeroU8;
 use tiny_bail::or_continue;
 use tiny_bail::or_return;
 use tiny_bail::or_return_quiet;
@@ -37,6 +37,45 @@ pub(super) fn plugin(app: &mut App) {
         .register_type::<DiscardPile>()
         .register_type::<CardFaceRoot>()
         .register_type::<CardFace>();
+}
+
+#[derive(SystemParam)]
+pub struct Cards<'w, 's> {
+    cmd: Commands<'w, 's>,
+    selected_cards: Query<'w, 's, Entity, With<SelectedTileTriggerCard>>,
+    discard_pile: Single<'w, 's, Entity, With<DiscardPile>>,
+    #[expect(dead_code)]
+    draw_pile: Single<'w, 's, Entity, With<DrawPile>>,
+    #[expect(dead_code)]
+    hand: Single<'w, 's, Entity, With<CardsInHand>>,
+    card_q: Query<'w, 's, &'static Card>,
+    parent_q: Query<'w, 's, &'static ChildOf>,
+}
+impl<'w, 's> Cards<'w, 's> {
+    pub fn discard_card(&mut self, card_e: Entity) {
+        or_return!(self.cmd.get_entity(card_e))
+            .try_remove::<HandCard>()
+            .try_insert(DiscardPileCard(*self.discard_pile));
+        // deselect any (other) selected tile cards on play
+        for selected_card_e in &self.selected_cards {
+            or_return!(self.cmd.get_entity(selected_card_e))
+                .try_remove::<SelectedTileTriggerCard>();
+        }
+    }
+
+    pub fn get_card_root(&self, card_or_child_e: Entity) -> Option<(Entity, &Card)> {
+        if let Ok(card) = self.card_q.get(card_or_child_e) {
+            return Some((card_or_child_e, card));
+        }
+
+        for e in self.parent_q.iter_ancestors(card_or_child_e) {
+            if let Ok(card) = self.card_q.get(e) {
+                return Some((e, card));
+            }
+        }
+
+        None
+    }
 }
 
 // todo: consider rewriting this so that
@@ -234,9 +273,9 @@ fn reposition_hand_cards(
 fn card_added_to_discard(
     trig: On<Add, DiscardPileCard>,
     mut cmd: Commands,
-    observer_q: Query<(Entity, &Observer)>,
     card_rot_q: Query<&RotationRoot>,
     discard: Single<&DiscardPile>,
+    mut observers: Observers,
 ) {
     let anim_dur_ms = 300;
     let mut rng = rng();
@@ -250,7 +289,7 @@ fn card_added_to_discard(
         anim_dur_ms,
         None,
     ));
-    remove_observers_for_watched_entity(&mut cmd, observer_q, trig.event_target());
+    observers.remove_observers_for_watched_entity(trig.event_target());
 }
 
 fn on_card_click(
@@ -259,7 +298,7 @@ fn on_card_click(
     card_selected_q: Query<(&Card, Has<SelectedTileTriggerCard>)>,
 ) {
     let (card, selected) = or_return!(card_selected_q.get(trig.event_target()));
-    match card.trigger {
+    match card.effect_trigger {
         CardEffectTrigger::TileSelection(_) => {
             if selected {
                 // deselect card

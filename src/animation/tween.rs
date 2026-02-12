@@ -479,6 +479,19 @@ pub fn tween_sprite_color_on_trigger<E: EntityEvent, B: Bundle>(
     }
 }
 
+pub fn tween_sprite_color_on_trigger_with<E: EntityEvent, B: Bundle>(
+    color_fn: impl Fn(&E) -> Color,
+) -> impl FnMut(On<E, B>, Commands) {
+    move |ev, mut cmd| {
+        let e = ev.event_target();
+        tiny_bail::or_return!(cmd.get_entity(e)).insert(get_relative_sprite_color_anim(
+            color_fn(ev.event()),
+            200,
+            None,
+        ));
+    }
+}
+
 pub fn tween_related_sprite_color_on_trigger<
     E: EntityEvent,
     B: Bundle,

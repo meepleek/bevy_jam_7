@@ -127,7 +127,7 @@ fn play_selected_tile_card(
 ) {
     use TileCardEffect::*;
     let card = or_return!(card_q.get(trig.card_e));
-    match &card.trigger {
+    match &card.effect_trigger {
         CardEffectTrigger::TileSelection(tile_card_action) => {
             match tile_card_action {
                 Move { temp_offset, .. } => {
@@ -170,7 +170,7 @@ fn process_selected_tile_trigger_card(
 ) {
     let card = or_return!(card_q.get(trig.event_target()));
     let player_tile = or_return!(grid.entity_to_coords(*player));
-    match &card.trigger {
+    match &card.effect_trigger {
         CardEffectTrigger::TileSelection(action) => {
             let interaction_palette = action.tile_interaction_palette();
             for (tile, position) in action

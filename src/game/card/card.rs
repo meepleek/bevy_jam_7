@@ -5,24 +5,49 @@ use crate::utils::bundle_effect::BundleEffect;
 
 pub const CARD_BORDER_COL: Srgba = GRAY_950;
 pub const CARD_BORDER_COL_FOCUS: Srgba = AMBER_400;
+pub const CARD_BORDER_COL_DISCARD: Srgba = RED_500;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_observer(draw_card_effects);
+    app.add_observer(spawn_card_face);
+}
+
+#[derive(EntityEvent, Debug, Clone)]
+#[entity_event(propagate, auto_propagate)]
+pub struct ColorCardBorder {
+    entity: Entity,
+    pub color: Color,
 }
 
 #[derive(Component, Debug, Clone)]
 #[require(Transform)]
 pub struct Card {
-    pub trigger: CardEffectTrigger,
+    pub effect_trigger: CardEffectTrigger,
+    pub discard_trigger: Option<CardEffect>,
 }
+impl Card {
+    pub fn from_card_effect(card_effect: CardEffect) -> Self {
+        Self {
+            effect_trigger: CardEffectTrigger::CardSelection(card_effect),
+            discard_trigger: None,
+        }
+    }
 
-// pub enum CardUse {
-//     Play,
-//     Discard,
-//     // Trash,
-//     // HeldInHand,
-//     // InDiscard,
-// }
+    pub fn from_tile_effect(tile_card_effect: TileCardEffect) -> Self {
+        Self {
+            effect_trigger: CardEffectTrigger::TileSelection(tile_card_effect),
+            discard_trigger: None,
+        }
+    }
+
+    pub fn with_discard_effect(mut self, discard_effect: CardEffect) -> Self {
+        self.discard_trigger = Some(discard_effect);
+        self
+    }
+
+    pub fn with_cool1_discard_effect(self) -> Self {
+        self.with_discard_effect(CardEffect::TempOffset(-1))
+    }
+}
 
 #[derive(EntityEvent)]
 #[entity_event(propagate)]
@@ -37,15 +62,10 @@ pub struct SelectedTileTriggerCard;
 relationship_1_to_1!(CardContent, CardContentRoot);
 relationship_1_to_1!(CardFace, CardFaceRoot);
 
-pub fn card(
-    action: CardEffectTrigger,
-    position: Vec3,
-    rotation: Rot2,
-    hover_mesh: Handle<Mesh>,
-) -> impl Bundle {
+pub fn card(card: Card, position: Vec3, rotation: Rot2, hover_mesh: Handle<Mesh>) -> impl Bundle {
     (
         Name::new("card"),
-        Card { trigger: action },
+        card,
         Transform::from_translation(position),
         Visibility::default(),
         BundleEffect::new(move |e_cmd| {
@@ -66,7 +86,11 @@ pub fn card(
                         Sprite::from_color(AMBER_100, Vec2::new(150., 230.)),
                         Transform::from_xyz(0., 0., 0.05),
                     )],
-                ));
+                ))
+                .observe(tween::tween_sprite_color_on_trigger_with::<
+                    ColorCardBorder,
+                    (),
+                >(|ev| ev.color));
 
                 b.spawn((
                     Name::new("card_hover_area"),
@@ -91,7 +115,7 @@ pub fn card(
     )
 }
 
-fn draw_card_effects(
+fn spawn_card_face(
     trig: On<Add, HandCard>,
     card_q: Query<(&Card, &RotationRoot), Without<CardFaceRoot>>,
     mut cmd: Commands,
@@ -107,12 +131,12 @@ fn draw_card_effects(
         .with_children(|b| {
             b.spawn((
                 Name::new("card_title"),
-                Text2d::new(card.trigger.title()),
+                Text2d::new(card.effect_trigger.title()),
                 TextColor::from(BLACK),
                 Transform::from_translation(Vec3::Y * 90.),
             ));
 
-            if let Some(temp_offset) = card.trigger.temp_offset() {
+            if let Some(temp_offset) = card.effect_trigger.temp_offset() {
                 b.spawn((
                     Name::new("temp_offset"),
                     Text2d::new(temp_offset.to_string()),
@@ -121,7 +145,7 @@ fn draw_card_effects(
                 ));
             }
 
-            match &card.trigger {
+            match &card.effect_trigger {
                 CardEffectTrigger::CardSelection(_action) => {
                     // todo: smt for card actions
                     //  b.spawn((
@@ -150,6 +174,52 @@ fn draw_card_effects(
                     });
                 }
             }
+
+            if card.discard_trigger.is_some() {
+                b.spawn((
+                    Name::new("discard_bg"),
+                    Sprite::from_color(RED_400, Vec2::new(150., 50.)),
+                    Transform::from_xyz(0., -85., 0.),
+                    Pickable {
+                        should_block_lower: true,
+                        is_hoverable: true,
+                    },
+                    children![(
+                        Name::new("discard"),
+                        Text2d::new("discard".to_string()),
+                        TextColor::from(BLACK),
+                    )],
+                ))
+                .observe(stop_pointer_event_propagation::<Click>)
+                .observe(handle_discard_click)
+                .observe(map_pointer_event::<Over, _>(|entity, _| ColorCardBorder {
+                    entity,
+                    color: CARD_BORDER_COL_DISCARD.into(),
+                }))
+                .observe(map_pointer_event::<Out, _>(|entity, _| ColorCardBorder {
+                    entity,
+                    color: CARD_BORDER_COL_FOCUS.into(),
+                }));
+            }
         });
     });
+}
+
+fn handle_discard_click(
+    ev: On<Pointer<Click>>,
+    mut cmd: Commands,
+    mut observers: Observers,
+    mut cards: Cards,
+) {
+    let e = ev.event_target();
+    let (card_e, card) = or_return!(cards.get_card_root(e));
+    match or_return!(card.discard_trigger.as_ref()) {
+        CardEffect::TempOffset(offset) => cmd.trigger(TempChangeAction { change: *offset }),
+    };
+    or_return!(cmd.get_entity(e)).trigger(|entity| ColorCardBorder {
+        entity,
+        color: CARD_BORDER_COL.into(),
+    });
+    cards.discard_card(card_e);
+    observers.remove_observers_for_watched_entity(e);
 }

@@ -87,16 +87,10 @@ pub enum EffectReach {
 #[derive(Event)]
 pub struct PlayCard(pub Entity);
 
-fn play_card(
-    trig: On<PlayCard>,
-    selected_cards: Query<Entity, With<SelectedTileTriggerCard>>,
-    discard_pile: Single<Entity, With<DiscardPile>>,
-    card_q: Query<&Card>,
-    mut cmd: Commands,
-) {
+fn play_card(ev: On<PlayCard>, card_q: Query<&Card>, mut cmd: Commands, mut cards: Cards) {
     use CardEffect::*;
-    let card = or_return!(card_q.get(trig.0));
-    match &card.trigger {
+    let card = or_return!(card_q.get(ev.0));
+    match &card.effect_trigger {
         CardEffectTrigger::CardSelection(action) => match action {
             TempOffset(offset) => cmd.trigger(TempChangeAction { change: *offset }),
         },
@@ -105,13 +99,7 @@ fn play_card(
             unreachable!();
         }
     }
-    or_return!(cmd.get_entity(trig.0))
-        .try_remove::<HandCard>()
-        .try_insert(DiscardPileCard(discard_pile.into_inner()));
-    // deselect any (other) selected tile cards on play
-    for selected_card_e in &selected_cards {
-        or_return!(cmd.get_entity(selected_card_e)).try_remove::<SelectedTileTriggerCard>();
-    }
+    cards.discard_card(ev.0);
 }
 
 #[derive(Event)]

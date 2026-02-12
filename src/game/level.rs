@@ -15,11 +15,11 @@ fn spawn_level(
     cmd.spawn((Name::new("Character"), HandSize::default()));
     let piles_e = cmd.spawn((Name::new("Piles"), Piles)).id();
     let card_hover_mesh = meshes.add(Rectangle::new(230., 570.));
-    for (i, action) in starting_debug_deck().into_iter().enumerate() {
+    for (i, card) in starting_debug_deck().into_iter().enumerate() {
         let i = i as i16 - 3;
         let (pos, rot) = draw_pile_card_pos_rot(&mut rng, i);
         cmd.spawn(card::card(
-            action,
+            card,
             pos,
             Rot2::degrees(rot),
             card_hover_mesh.clone(),
@@ -69,54 +69,60 @@ pub fn tile_rect(color: impl Into<Color>) -> impl Bundle {
     Sprite::from_color(color.into(), Vec2::splat(50.))
 }
 
-fn starting_debug_deck() -> Vec<CardEffectTrigger> {
+fn starting_debug_deck() -> Vec<Card> {
     use crate::prelude::CardEffect::*;
     use crate::prelude::TileCardEffect::*;
 
     vec![
-        CardEffectTrigger::TileSelection(Move {
+        Card::from_tile_effect(Move {
             target: EffectTarget {
                 reach: EffectReach::Exact(1),
                 direction: EffectDirection::Orthogonal,
             },
             temp_offset: 1,
-        }),
-        CardEffectTrigger::TileSelection(Move {
+        })
+        .with_cool1_discard_effect(),
+        Card::from_tile_effect(Move {
             target: EffectTarget {
                 reach: EffectReach::Exact(1),
                 direction: EffectDirection::Orthogonal,
             },
             temp_offset: 1,
-        }),
-        CardEffectTrigger::TileSelection(Move {
+        })
+        .with_cool1_discard_effect(),
+        Card::from_tile_effect(Move {
             target: EffectTarget {
                 reach: EffectReach::Exact(1),
                 direction: EffectDirection::Diagonal,
             },
             temp_offset: 1,
-        }),
-        CardEffectTrigger::TileSelection(Move {
+        })
+        .with_cool1_discard_effect(),
+        Card::from_tile_effect(Move {
             target: EffectTarget {
                 reach: EffectReach::Exact(2),
                 direction: EffectDirection::Diagonal,
             },
             temp_offset: 1,
-        }),
-        CardEffectTrigger::TileSelection(Attack {
+        })
+        .with_cool1_discard_effect(),
+        Card::from_tile_effect(Attack {
             target: EffectTarget {
                 reach: EffectReach::Range(2),
                 direction: EffectDirection::Orthogonal,
             },
             temp_offset: 3,
-        }),
-        CardEffectTrigger::TileSelection(Attack {
+        })
+        .with_cool1_discard_effect(),
+        Card::from_tile_effect(Attack {
             target: EffectTarget {
                 reach: EffectReach::Range(1),
                 direction: EffectDirection::Area,
             },
             temp_offset: 2,
-        }),
-        CardEffectTrigger::CardSelection(TempOffset(-2)),
-        CardEffectTrigger::CardSelection(TempOffset(-2)),
+        })
+        .with_cool1_discard_effect(),
+        Card::from_card_effect(TempOffset(-2)),
+        Card::from_card_effect(TempOffset(-2)),
     ]
 }
