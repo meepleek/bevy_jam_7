@@ -62,29 +62,8 @@ impl<'w, 's> Cards<'w, 's> {
                 .try_remove::<SelectedTileTriggerCard>();
         }
     }
-
-    pub fn get_card_root(&self, card_or_child_e: Entity) -> Option<(Entity, &Card)> {
-        if let Ok(card) = self.card_q.get(card_or_child_e) {
-            return Some((card_or_child_e, card));
-        }
-
-        for e in self.parent_q.iter_ancestors(card_or_child_e) {
-            if let Ok(card) = self.card_q.get(e) {
-                return Some((e, card));
-            }
-        }
-
-        None
-    }
 }
 
-// todo: consider rewriting this so that
-// piles is a singleton component (ensure_one) that tracks all the piles like draw, hand, discard using observers
-// then add an create animator fn to either CardState or the Piles component
-// that animates the position, rotation, scale (focus pop) & colors
-// and run it from a single system
-// consider making the card pile an enum component
-// and keeping CardSelected & CardHovered as singleton components
 #[derive(Component)]
 #[require(DrawPile, CardsInHand, DiscardPile)]
 pub struct Piles;

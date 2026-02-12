@@ -210,9 +210,10 @@ fn handle_discard_click(
     mut cmd: Commands,
     mut observers: Observers,
     mut cards: Cards,
+    hiearchy: Hiearchy<Card>,
 ) {
     let e = ev.event_target();
-    let (card_e, card) = or_return!(cards.get_card_root(e));
+    let (card_e, card) = or_return!(hiearchy.get_self_or_ancestor(e));
     match or_return!(card.discard_trigger.as_ref()) {
         CardEffect::TempOffset(offset) => cmd.trigger(TempChangeAction { change: *offset }),
     };

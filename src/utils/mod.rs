@@ -3,6 +3,7 @@
 use bevy::prelude::*;
 
 pub mod bundle_effect;
+pub mod ecs;
 pub mod extend;
 pub mod initial;
 pub mod math;
@@ -15,6 +16,7 @@ pub fn plugin(app: &mut App) {
 
 #[allow(unused_imports)]
 pub mod prelude {
+    pub use super::ecs::*;
     pub use super::extend::prelude::*;
     pub use super::initial::Initial;
     pub use super::observer::*;
