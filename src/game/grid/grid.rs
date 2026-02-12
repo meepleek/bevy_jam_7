@@ -173,6 +173,33 @@ impl Grid {
         tile.min_element() >= 0 && tile.x < self.width as _ && tile.y < self.heigth as _
     }
 
+    pub fn effect_tiles(
+        &self,
+        center: Coords,
+        start_tile: Coords,
+        effect_target: EffectTarget,
+        entity_kind: Option<TileEntityKind>,
+    ) -> Vec<Coords> {
+        effect_target
+            .target_tiles()
+            .into_iter()
+            .filter_map(|t| {
+                let target = center + t;
+                let is_effect_tile = match entity_kind {
+                    Some(kind) => {
+                        self.within_bounds(target)
+                            && self
+                                .occupied_tiles
+                                .get(&target)
+                                .is_some_and(|entity| entity.kind == kind)
+                    }
+                    None => self.can_place_at(target).is_ok(),
+                } || (target == start_tile && self.within_bounds(start_tile));
+                is_effect_tile.then_some(target)
+            })
+            .collect()
+    }
+
     fn neighbours(
         &self,
         tile: Coords,
@@ -236,6 +263,30 @@ impl Grid {
             })
     }
 
+    fn path_to_reach_effect_target(
+        &self,
+        start: Coords,
+        target_tile: Coords,
+        move_dir: TileDirection,
+        effect_target: EffectTarget,
+        entity_kind: Option<TileEntityKind>,
+        rng: &mut impl Rng,
+    ) -> Option<Vec<Coords>> {
+        let effect_tiles = self.effect_tiles(target_tile, start, effect_target, entity_kind);
+        tracing::warn!(?effect_tiles);
+        dijkstra::dijkstra(
+            &start,
+            |tile| {
+                self.neighbours(*tile, Some(target_tile), move_dir, rng)
+                    .into_iter()
+                    .map(|tile| (tile, 1))
+            },
+            |tile| effect_tiles.contains(tile),
+        )
+        .map(|path| path.0.into_iter().skip(1).collect::<Vec<_>>())
+        .and_then(|path| (!path.is_empty()).then_some(path))
+    }
+
     #[allow(dead_code)]
     pub fn iter_tiles(&self) -> TileIterator {
         TileIterator::from_size((self.width, self.heigth))
@@ -243,18 +294,18 @@ impl Grid {
 
     #[allow(dead_code)]
     pub fn ascii_debug_map(&self) -> String {
-        let size = self.size();
+        let size = self.grid_size();
         let mut dbg_map = String::with_capacity(size.element_product() as _);
         let x_axis = (0..self.width)
             .map(|i| (i % 10).to_string())
             .collect::<String>();
-        dbg_map.push_str(&format!("  {}\n", &x_axis));
+        dbg_map.push_str(&format!(" _{}_\n", &x_axis));
         dbg_map.push_str(" 0");
         let mut prev_y = 0;
         for tile in self.iter_tiles() {
             if tile.y != prev_y {
                 prev_y = tile.y;
-                dbg_map.push_str(&format!("{:2}", tile.y - 1));
+                dbg_map.push_str(&format!("{}", tile.y - 1));
                 dbg_map.push('\n');
                 dbg_map.push_str(&format!("{:2}", tile.y));
             }
@@ -267,7 +318,7 @@ impl Grid {
                 None => '.',
             });
         }
-        dbg_map.push_str(&format!("\n  {}", &x_axis));
+        dbg_map.push_str(&format!("{}\n _{}_", size.y - 1, &x_axis));
         dbg_map
     }
 }
@@ -453,5 +504,107 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(seed);
         board.path_next_to_target(start.into(), target.into(), move_dir, &mut rng)
+    }
+
+    #[test_case((2, 2), TileDirection::All, 0 => Some(vec![Coords::new(3, 3)]))]
+    #[test_case((2, 2), TileDirection::Diagonal, 0 => Some(vec![Coords::new(3, 3)]))]
+    #[test_case((1, 0), TileDirection::All, 0 => Some(vec![Coords::new(2, 0), Coords::new(3, 0), Coords::new(4, 1)]))]
+    #[test_case((1, 0), TileDirection::Orthogonal, 0 => Some(vec![Coords::new(2, 0), Coords::new(3, 0), Coords::new(4, 0), Coords::new(4, 1)]))]
+    #[test_case((1, 0), TileDirection::Diagonal, 0 => Some(vec![Coords::new(0, 1), Coords::new(1, 2), Coords::new(2, 3), Coords::new(3, 2)]))]
+    #[test_case((4, 3), TileDirection::Diagonal, 0 => None)]
+    #[traced_test]
+    fn path_to_reach_effect_target_effect_range_1(
+        start: impl Into<Coords>,
+        move_dir: TileDirection,
+        seed: u64,
+    ) -> Option<Vec<Coords>> {
+        let grid = test_grid();
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        grid.path_to_reach_effect_target(
+            start.into(),
+            PLAYER_TILE.into(),
+            move_dir,
+            EffectTarget {
+                reach: EffectReach::Range(1),
+                direction: EffectDirection::Area,
+            },
+            None,
+            &mut rng,
+        )
+    }
+
+    #[test_case((2, 2), TileDirection::All, 0 => None)]
+    #[test_case((1, 0), TileDirection::All, 0 => Some(vec![Coords::new(2, 0), Coords::new(3, 0), Coords::new(4, 0)]))]
+    #[test_case((1, 0), TileDirection::Diagonal, 0 => None)]
+    #[traced_test]
+    fn path_to_reach_effect_target_effect_exact_range_2(
+        start: impl Into<Coords>,
+        move_dir: TileDirection,
+        seed: u64,
+    ) -> Option<Vec<Coords>> {
+        let grid = test_grid();
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        grid.path_to_reach_effect_target(
+            start.into(),
+            PLAYER_TILE.into(),
+            move_dir,
+            EffectTarget {
+                reach: EffectReach::Exact(2),
+                direction: EffectDirection::Orthogonal,
+            },
+            None,
+            &mut rng,
+        )
+    }
+
+    const PLAYER_TILE: (i16, i16) = (4, 2);
+
+    /// test map:
+    ///
+    /// \_01234\_
+    /// 0.!...0
+    /// 1.###.1
+    /// 2..!.@2
+    /// 3.....3
+    /// 4...!.4
+    /// \_01234\_
+    fn test_grid() -> Grid {
+        let mut grid = Grid::new(5, 5);
+        for tile in [(1, 1), (2, 1), (3, 1)] {
+            _ = grid
+                .place_entity(
+                    TileEntity {
+                        entity: Entity::PLACEHOLDER,
+                        kind: TileEntityKind::Wall,
+                    },
+                    tile.into(),
+                )
+                .expect("Failed to place an obstacle");
+        }
+        for tile in [(1, 0), (2, 2), (3, 4)] {
+            _ = grid
+                .place_entity(
+                    TileEntity {
+                        entity: Entity::PLACEHOLDER,
+                        kind: TileEntityKind::Enemy,
+                    },
+                    tile.into(),
+                )
+                .expect("Failed to place an enemy");
+        }
+        _ = grid
+            .place_entity(
+                TileEntity {
+                    entity: Entity::PLACEHOLDER,
+                    kind: TileEntityKind::Player,
+                },
+                PLAYER_TILE.into(),
+            )
+            .expect("Failed to place the player");
+
+        println!("{}", grid.ascii_debug_map());
+        grid
     }
 }

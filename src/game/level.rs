@@ -36,7 +36,7 @@ fn spawn_level(
         tile_rect(BLUE_400),
     ));
 
-    for (x, y) in [/*(2, 1), (3, 3),*/ (0, 3)] {
+    for (x, y) in [(2, 1), (3, 3), (0, 3)] {
         cmd.spawn(chaser_enemy(
             grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.),
         ));

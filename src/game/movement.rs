@@ -16,7 +16,7 @@ pub struct Movement {
 impl Default for Movement {
     fn default() -> Self {
         Self {
-            tile_movement_speed_ms: 300,
+            tile_movement_speed_ms: 350,
             tile_pause_ms: 100,
         }
     }

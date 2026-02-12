@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use bevy::color::palettes::css::CRIMSON;
+use bevy_trauma_shake::Shakes;
 
 use crate::{game::turn::TurnOrder, prelude::*};
 
@@ -16,9 +17,20 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct Enemy;
 
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone)]
 pub enum EnemyAbility {
-    Attack { reach: EffectReach, temp_offset: i8 },
+    Attack {
+        target: EffectTarget,
+        temp_offset: i8,
+        // todo: lob?
+    },
+}
+impl EnemyAbility {
+    fn action_duration_ms(&self) -> u64 {
+        match self {
+            EnemyAbility::Attack { .. } => 500,
+        }
+    }
 }
 
 #[derive(Resource, Deref, DerefMut, Debug, Default)]
@@ -79,20 +91,36 @@ fn process_queue(
     mut action_queue: ResMut<EnemyActionQueue>,
     time: Res<Time>,
     mut turn: ResMut<NextState<TurnOrder>>,
-    enemy_q: Query<(&GlobalTransform, Option<&TileDirection>, Option<&Movement>)>,
+    enemy_q: Query<(
+        &GlobalTransform,
+        &EnemyAbility,
+        Option<&TileDirection>,
+        Option<&Movement>,
+    )>,
     grid: Single<&Grid>,
     player_t: Single<&GlobalTransform, With<Player>>,
+    mut shake: Shakes,
 ) {
     action_timer.tick(time.delta());
     if action_timer.is_finished() {
         match action_queue.pop_front() {
             Some(action) => {
                 let mut rng = rng();
-                let (enemy_t, enemy_dir, enemy_movement) = or_return!(enemy_q.get(action.enemy_e));
+                let (enemy_t, enemy_ability, enemy_dir, enemy_movement) =
+                    or_return!(enemy_q.get(action.enemy_e));
                 let action_duration = match action.kind {
                     EnemyActionKind::Ability => {
-                        tracing::warn!("doing a cool ability");
-                        Duration::from_millis(100)
+                        match enemy_ability {
+                            EnemyAbility::Attack {
+                                target,
+                                temp_offset,
+                            } => {
+                                // todo: determine whether player can be hit based of target
+                                // trigger temp change & add extra shake
+                                shake.add_trauma(0.5);
+                            }
+                        };
+                        Duration::from_millis(enemy_ability.action_duration_ms())
                     }
                     EnemyActionKind::Move => {
                         let tile_dir = or_return!(enemy_dir);
@@ -100,6 +128,8 @@ fn process_queue(
                         let tile = or_return!(grid.world_to_tile(enemy_t.translation().truncate()));
                         let player_tile =
                             or_return!(grid.world_to_tile(player_t.translation().truncate()));
+
+                        // todo: this should take effect into account to allow for pathfinding based on EffectTarget tiles instead of specific implementations
                         let path = grid.path_next_to_target(tile, player_tile, *tile_dir, &mut rng);
                         tracing::warn!(?tile, ?player_tile, ?path);
                         if let Some(path) = path
@@ -132,6 +162,13 @@ pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
         Movement::default(),
         TileDirection::Orthogonal,
         TileEntityKind::Enemy,
+        EnemyAbility::Attack {
+            target: EffectTarget {
+                reach: EffectReach::Exact(1),
+                direction: EffectDirection::Area,
+            },
+            temp_offset: 2,
+        },
         tile_rect(CRIMSON),
         Transform::from_translation(pos),
     )
