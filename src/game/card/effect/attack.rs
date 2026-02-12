@@ -17,9 +17,11 @@ fn handle_temp_change(
     mut cmd: Commands,
 ) {
     let tile_e = or_return!(grid.clear_tile(action.tile));
-    or_return!(cmd.get_entity(tile_e.entity)).insert((
+    let mut e_cmd = or_return!(cmd.get_entity(tile_e.entity));
+    e_cmd.insert((
         tween::get_relative_scale_anim(Vec2::ZERO, 300, Some(EaseFunction::QuadraticIn)),
         DespawnOnTweenCompleted::Itself,
     ));
+    e_cmd.try_remove::<Enemy>();
     shake.add_trauma(0.25);
 }
