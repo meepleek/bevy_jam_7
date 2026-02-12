@@ -27,10 +27,17 @@ pub enum PlayerRoundPhase {
 }
 
 fn end_turn_on_empty_hand(
-    piles_q: Query<&CardsInHand, Changed<CardsInHand>>,
+    card_q: Query<&CardsInHand, Changed<CardsInHand>>,
     mut turn: ResMut<NextState<TurnOrder>>,
+    mut piles: Single<&mut Piles>,
 ) {
-    let hand = or_return_quiet!(piles_q.single());
+    if piles.first_hand {
+        // avoid AI starting because the initial hand is empty
+        piles.first_hand = false;
+        return;
+    }
+
+    let hand = or_return_quiet!(card_q.single());
     if hand.is_empty() {
         turn.set(TurnOrder::Ai);
     }

@@ -48,8 +48,6 @@ pub struct Cards<'w, 's> {
     draw_pile: Single<'w, 's, Entity, With<DrawPile>>,
     #[expect(dead_code)]
     hand: Single<'w, 's, Entity, With<CardsInHand>>,
-    card_q: Query<'w, 's, &'static Card>,
-    parent_q: Query<'w, 's, &'static ChildOf>,
 }
 impl<'w, 's> Cards<'w, 's> {
     pub fn discard_card(&mut self, card_e: Entity) {
@@ -64,9 +62,11 @@ impl<'w, 's> Cards<'w, 's> {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 #[require(DrawPile, CardsInHand, DiscardPile)]
-pub struct Piles;
+pub struct Piles {
+    pub first_hand: bool,
+}
 
 #[derive(Component, Debug, Deref)]
 pub struct HandSize(pub NonZeroU8);
@@ -221,7 +221,7 @@ fn card_added_to_hand(
 
 fn restore_empty_piles<T: RelationshipTarget>(trig: On<Remove, T>, mut cmd: Commands) {
     // reinsert piles to retrigger adding missing empty piles
-    or_return!(cmd.get_entity(trig.event_target())).insert(Piles);
+    or_return!(cmd.get_entity(trig.event_target())).insert(Piles::default());
 }
 
 fn reposition_hand_cards(
