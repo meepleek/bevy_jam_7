@@ -1,11 +1,12 @@
 use crate::prelude::*;
 
+pub mod attack;
 pub mod card_effect;
 pub mod temp;
 pub mod tile_effect;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((tile_effect::plugin, temp::plugin))
+    app.add_plugins((tile_effect::plugin, temp::plugin, attack::plugin))
         .add_observer(play_card);
 }
 

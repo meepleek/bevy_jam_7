@@ -1,3 +1,4 @@
+use crate::prelude::attack::AttackAction;
 pub use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
@@ -110,20 +111,20 @@ impl TileCardEffect {
 }
 
 fn play_selected_tile_card(
-    trig: On<PlaySelectedTileCard>,
+    event: On<PlaySelectedTileCard>,
     player: Single<Entity, With<Player>>,
     discard_pile: Single<Entity, With<DiscardPile>>,
     card_q: Query<&Card>,
     mut cmd: Commands,
 ) {
     use TileCardEffect::*;
-    let card = or_return!(card_q.get(trig.card_e));
+    let card = or_return!(card_q.get(event.card_e));
     match &card.effect_trigger {
         CardEffectTrigger::TileSelection(tile_card_action) => match tile_card_action {
             Move { temp_offset, .. } => {
                 cmd.trigger(MoveAction {
                     agent_e: *player,
-                    to: trig.selected_tile,
+                    to: event.selected_tile,
                 });
                 cmd.trigger(TempChangeAction {
                     change: *temp_offset,
@@ -133,6 +134,9 @@ fn play_selected_tile_card(
                 cmd.trigger(TempChangeAction {
                     change: *temp_offset,
                 });
+                cmd.trigger(AttackAction {
+                    tile: event.selected_tile,
+                });
             }
         },
         CardEffectTrigger::CardSelection(_) => {
@@ -140,7 +144,7 @@ fn play_selected_tile_card(
             unreachable!();
         }
     }
-    or_return!(cmd.get_entity(trig.card_e))
+    or_return!(cmd.get_entity(event.card_e))
         .try_remove::<SelectedTileTriggerCard>()
         .try_remove::<HandCard>()
         .try_insert(DiscardPileCard(discard_pile.into_inner()));

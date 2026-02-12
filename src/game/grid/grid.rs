@@ -165,7 +165,7 @@ impl Grid {
         Ok(())
     }
 
-    fn clear_tile(&mut self, coords: Coords) -> Option<TileEntity> {
+    pub fn clear_tile(&mut self, coords: Coords) -> Option<TileEntity> {
         self.occupied_tiles.remove(&coords)
     }
 
