@@ -54,12 +54,6 @@ impl EffectTarget {
                 .collect(),
         }
     }
-
-    pub fn target_tiles_with_center(&self) -> Vec<Coords> {
-        let mut tiles = self.target_tiles();
-        tiles.push(Coords::ZERO);
-        tiles
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -102,10 +96,7 @@ impl TileCardEffect {
     pub fn tiles(&self) -> Vec<Coords> {
         use TileCardEffect::*;
         match self {
-            Move { target, .. } | Attack { target, .. } => match self.tile_target() {
-                TileTarget::Empty => target.target_tiles(),
-                TileTarget::Enemy => target.target_tiles_with_center(),
-            },
+            Move { target, .. } | Attack { target, .. } => target.target_tiles(),
         }
     }
 
@@ -128,28 +119,22 @@ fn play_selected_tile_card(
     use TileCardEffect::*;
     let card = or_return!(card_q.get(trig.card_e));
     match &card.effect_trigger {
-        CardEffectTrigger::TileSelection(tile_card_action) => {
-            match tile_card_action {
-                Move { temp_offset, .. } => {
-                    cmd.trigger(MoveAction {
-                        agent_e: *player,
-                        to: trig.selected_tile,
-                    });
-                    cmd.trigger(TempChangeAction {
-                        change: *temp_offset,
-                    });
-                }
-                Attack {
-                    temp_offset,
-                    // poison,
-                    ..
-                } => {
-                    cmd.trigger(TempChangeAction {
-                        change: *temp_offset,
-                    });
-                }
+        CardEffectTrigger::TileSelection(tile_card_action) => match tile_card_action {
+            Move { temp_offset, .. } => {
+                cmd.trigger(MoveAction {
+                    agent_e: *player,
+                    to: trig.selected_tile,
+                });
+                cmd.trigger(TempChangeAction {
+                    change: *temp_offset,
+                });
             }
-        }
+            Attack { temp_offset, .. } => {
+                cmd.trigger(TempChangeAction {
+                    change: *temp_offset,
+                });
+            }
+        },
         CardEffectTrigger::CardSelection(_) => {
             error!(?card, "Card should not have been played on tile selection");
             unreachable!();
