@@ -173,22 +173,51 @@ impl Grid {
         tile.min_element() >= 0 && tile.x < self.width as _ && tile.y < self.heigth as _
     }
 
-    pub fn effect_tiles(
+    fn effect_tiles(
         &self,
         center: Coords,
-        start_tile: Coords,
+        allowed_occupied_tiles: Option<Vec<Coords>>,
         effect_target: EffectTarget,
+        allowed_entity_kind: Option<TileEntityKind>,
     ) -> Vec<Coords> {
         effect_target
             .target_tiles()
             .into_iter()
             .filter_map(|t| {
                 let target = center + t;
-                let is_effect_tile = self.can_place_at(target).is_ok()
-                    || (target == start_tile && self.within_bounds(start_tile));
+                let is_effect_tile = match allowed_entity_kind {
+                    Some(kind) => self
+                        .occupied_tiles
+                        .get(&target)
+                        .is_some_and(|entity| entity.kind == kind),
+                    None => self.can_place_at(target).is_ok(),
+                } || (self.within_bounds(target)
+                    && allowed_occupied_tiles
+                        .as_ref()
+                        .is_some_and(|allowed| allowed.contains(&target)));
+
                 is_effect_tile.then_some(target)
             })
             .collect()
+    }
+
+    fn effect_tiles_with_start_tile(
+        &self,
+        center: Coords,
+        start_tile: Coords,
+        effect_target: EffectTarget,
+    ) -> Vec<Coords> {
+        self.effect_tiles(center, Some(vec![start_tile]), effect_target, None)
+    }
+
+    pub fn effect_tiles_contain_entity_kind(
+        &self,
+        center: Coords,
+        effect_target: EffectTarget,
+        entity_kind: TileEntityKind,
+    ) -> bool {
+        let effect_tiles = self.effect_tiles(center, None, effect_target, Some(entity_kind));
+        !effect_tiles.is_empty()
     }
 
     fn neighbours(
@@ -228,8 +257,7 @@ impl Grid {
         effect_target: EffectTarget,
         rng: &mut impl Rng,
     ) -> Option<Vec<Coords>> {
-        let effect_tiles = self.effect_tiles(target_tile, start, effect_target);
-        tracing::warn!(?effect_tiles);
+        let effect_tiles = self.effect_tiles_with_start_tile(target_tile, start, effect_target);
         dijkstra::dijkstra(
             &start,
             |tile| {
@@ -292,9 +320,7 @@ fn add_new_tile_entities_to_grid(
     mut grid: Single<&mut Grid>,
 ) {
     for (e, kind, t) in entity_q {
-        tracing::warn!("added tile entity");
         let tile = or_return!(grid.world_to_tile(t.translation().truncate()));
-        tracing::warn!(?kind, ?tile, "added tile entity 2");
         or_return!(grid.place_entity(
             TileEntity {
                 entity: e,

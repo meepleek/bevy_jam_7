@@ -1,7 +1,6 @@
-use std::collections::VecDeque;
-
 use bevy::color::palettes::css::CRIMSON;
 use bevy_trauma_shake::Shakes;
+use std::collections::VecDeque;
 
 use crate::{game::turn::TurnOrder, prelude::*};
 
@@ -97,12 +96,7 @@ fn process_queue(
     mut action_queue: ResMut<EnemyActionQueue>,
     time: Res<Time>,
     mut turn: ResMut<NextState<TurnOrder>>,
-    enemy_q: Query<(
-        &GlobalTransform,
-        &EnemyAbility,
-        Option<&TileDirection>,
-        Option<&Movement>,
-    )>,
+    enemy_q: Query<(&EnemyAbility, Option<&TileDirection>, Option<&Movement>)>,
     grid: Single<&Grid>,
     player_t: Single<&GlobalTransform, With<Player>>,
     mut shake: Shakes,
@@ -112,7 +106,8 @@ fn process_queue(
         match action_queue.pop_front() {
             Some(action) => {
                 let mut rng = rng();
-                let (enemy_t, enemy_ability, enemy_dir, enemy_movement) =
+                let enemy_tile = or_return!(grid.entity_to_coords(action.enemy_e));
+                let (enemy_ability, enemy_dir, enemy_movement) =
                     or_return!(enemy_q.get(action.enemy_e));
                 let action_duration = match action.kind {
                     EnemyActionKind::Ability => {
@@ -121,9 +116,17 @@ fn process_queue(
                                 target,
                                 temp_offset,
                             } => {
-                                // todo: determine whether player can be hit based of target
-                                // trigger temp change & add extra shake
-                                shake.add_trauma(0.5);
+                                if grid.effect_tiles_contain_entity_kind(
+                                    enemy_tile,
+                                    target.clone(),
+                                    TileEntityKind::Player,
+                                ) {
+                                    cmd.trigger(TempChangeAction {
+                                        change: *temp_offset,
+                                    });
+                                    shake.add_trauma(0.3);
+                                    // todo: tween enemy scale
+                                }
                             }
                         };
                         Duration::from_millis(enemy_ability.action_duration_ms())
@@ -131,19 +134,15 @@ fn process_queue(
                     EnemyActionKind::Move => {
                         let tile_dir = or_return!(enemy_dir);
                         let movement = or_return!(enemy_movement);
-                        let tile = or_return!(grid.world_to_tile(enemy_t.translation().truncate()));
                         let player_tile =
                             or_return!(grid.world_to_tile(player_t.translation().truncate()));
-
-                        // todo: this should take effect into account to allow for pathfinding based on EffectTarget tiles instead of specific implementations
                         let path = grid.path_to_reach_effect_target(
-                            tile,
+                            enemy_tile,
                             player_tile,
                             *tile_dir,
                             enemy_ability.effect_target(),
                             &mut rng,
                         );
-                        tracing::warn!(?tile, ?player_tile, ?path);
                         if let Some(path) = path
                             && let Some(to) = path.first()
                         {

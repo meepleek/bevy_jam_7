@@ -1,3 +1,5 @@
+use bevy_trauma_shake::Shakes;
+
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
@@ -42,8 +44,10 @@ pub struct TempChangeAction {
     pub change: i8,
 }
 
-fn handle_temp_change(action: On<TempChangeAction>, mut temp: ResMut<Temp>) {
+fn handle_temp_change(action: On<TempChangeAction>, mut temp: ResMut<Temp>, mut shake: Shakes) {
     tracing::info!(?temp, change = action.change, "Updating temp");
+    shake.add_trauma(0.1 * action.change.abs() as f32);
+
     let take_dmg = temp.update_current(action.change);
     if take_dmg {
         // todo: figure out what makes the game more nailbiting
