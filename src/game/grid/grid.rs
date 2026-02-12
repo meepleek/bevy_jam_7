@@ -178,23 +178,14 @@ impl Grid {
         center: Coords,
         start_tile: Coords,
         effect_target: EffectTarget,
-        entity_kind: Option<TileEntityKind>,
     ) -> Vec<Coords> {
         effect_target
             .target_tiles()
             .into_iter()
             .filter_map(|t| {
                 let target = center + t;
-                let is_effect_tile = match entity_kind {
-                    Some(kind) => {
-                        self.within_bounds(target)
-                            && self
-                                .occupied_tiles
-                                .get(&target)
-                                .is_some_and(|entity| entity.kind == kind)
-                    }
-                    None => self.can_place_at(target).is_ok(),
-                } || (target == start_tile && self.within_bounds(start_tile));
+                let is_effect_tile = self.can_place_at(target).is_ok()
+                    || (target == start_tile && self.within_bounds(start_tile));
                 is_effect_tile.then_some(target)
             })
             .collect()
@@ -229,50 +220,15 @@ impl Grid {
         neighbours
     }
 
-    fn path_to_target(
-        &self,
-        start: Coords,
-        end: Coords,
-        move_dir: TileDirection,
-        rng: &mut impl Rng,
-    ) -> Option<Vec<Coords>> {
-        dijkstra::dijkstra(
-            &start,
-            |tile| {
-                self.neighbours(*tile, Some(end), move_dir, rng)
-                    .into_iter()
-                    .map(|tile| (tile, 1))
-            },
-            |tile| *tile == end,
-        )
-        .map(|path| path.0.into_iter().skip(1).collect::<Vec<_>>())
-        .and_then(|path| if path.len() > 0 { Some(path) } else { None })
-    }
-
-    pub fn path_next_to_target(
-        &self,
-        start: Coords,
-        end: Coords,
-        move_dir: TileDirection,
-        rng: &mut impl Rng,
-    ) -> Option<Vec<Coords>> {
-        self.path_to_target(start, end, move_dir, rng)
-            .and_then(|mut path| {
-                _ = path.pop();
-                if path.len() > 0 { Some(path) } else { None }
-            })
-    }
-
-    fn path_to_reach_effect_target(
+    pub fn path_to_reach_effect_target(
         &self,
         start: Coords,
         target_tile: Coords,
         move_dir: TileDirection,
         effect_target: EffectTarget,
-        entity_kind: Option<TileEntityKind>,
         rng: &mut impl Rng,
     ) -> Option<Vec<Coords>> {
-        let effect_tiles = self.effect_tiles(target_tile, start, effect_target, entity_kind);
+        let effect_tiles = self.effect_tiles(target_tile, start, effect_target);
         tracing::warn!(?effect_tiles);
         dijkstra::dijkstra(
             &start,
@@ -432,80 +388,6 @@ mod tests {
         board.within_bounds(tile.into())
     }
 
-    #[test_case((0, 2), TileDirection::All, 0 => Some(vec![Coords::ONE, Coords::new(2, 2)]))]
-    #[test_case((1, 1), TileDirection::All, 0 => Some(vec![Coords::new(0, 1), Coords::new(1, 2), Coords::new(2, 2)]))]
-    #[test_case((1, 1), TileDirection::All, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
-    #[test_case((1, 1), TileDirection::Orthogonal, 0 => Some(vec![Coords::new(0, 1), Coords::new(0, 2), Coords::new(1, 2), Coords::new(2, 2)]))]
-    #[test_case((1, 1), TileDirection::Orthogonal, 1 => Some(vec![Coords::new(1, 0), Coords::new(2, 0), Coords::new(2, 1), Coords::new(2, 2)]))]
-    #[test_case((1, 1), TileDirection::Diagonal, 0 => None)]
-    #[traced_test]
-    fn path_to_target(
-        obstacle: (i16, i16),
-        move_dir: TileDirection,
-        seed: u64,
-    ) -> Option<Vec<Coords>> {
-        let mut board = Grid::new(3, 3);
-        _ = board
-            .place_entity(
-                TileEntity {
-                    entity: Entity::PLACEHOLDER,
-                    kind: TileEntityKind::Wall,
-                },
-                obstacle.into(),
-            )
-            .expect("Failed to place obstacle");
-
-        let mut rng = StdRng::seed_from_u64(seed);
-        board.path_to_target(Coords::ZERO, (2, 2).into(), move_dir, &mut rng)
-    }
-
-    #[test_case(3, Coords::ZERO, Coords::new(2, 2), Coords::ZERO, Coords::ONE, TileDirection::Orthogonal, 0 => Some(
-        vec![
-            Coords::new(0, 1),
-            Coords::new(0, 2),
-            Coords::new(1, 2),
-        ]))]
-    #[test_case(5, Coords::new(0, 3), Coords::new(2, 2), Coords::new(2, 2), Coords::new(0, 3), TileDirection::Orthogonal, 0 => Some(
-        vec![
-            Coords::new(1, 3),
-            Coords::new(1, 2),
-        ]))]
-    #[test_case(5, Coords::new(3, 4), Coords::new(3, 2), Coords::new(3, 2), Coords::new(3, 4), TileDirection::Orthogonal, 0 => Some(
-        vec![Coords::new(3, 3)]))]
-    #[traced_test]
-    fn path_next_to_target(
-        size: u16,
-        start: impl Into<Coords>,
-        target: impl Into<Coords>,
-        player: impl Into<Coords>,
-        enemy: impl Into<Coords>,
-        move_dir: TileDirection,
-        seed: u64,
-    ) -> Option<Vec<Coords>> {
-        let mut board = Grid::new(size, size);
-        _ = board
-            .place_entity(
-                TileEntity {
-                    entity: Entity::PLACEHOLDER,
-                    kind: TileEntityKind::Player,
-                },
-                player.into(),
-            )
-            .expect("Failed to place player");
-        _ = board
-            .place_entity(
-                TileEntity {
-                    entity: Entity::PLACEHOLDER,
-                    kind: TileEntityKind::Enemy,
-                },
-                enemy.into(),
-            )
-            .expect("Failed to place obstacle");
-
-        let mut rng = StdRng::seed_from_u64(seed);
-        board.path_next_to_target(start.into(), target.into(), move_dir, &mut rng)
-    }
-
     #[test_case((2, 2), TileDirection::All, 0 => Some(vec![Coords::new(3, 3)]))]
     #[test_case((2, 2), TileDirection::Diagonal, 0 => Some(vec![Coords::new(3, 3)]))]
     #[test_case((1, 0), TileDirection::All, 0 => Some(vec![Coords::new(2, 0), Coords::new(3, 0), Coords::new(4, 1)]))]
@@ -529,7 +411,6 @@ mod tests {
                 reach: EffectReach::Range(1),
                 direction: EffectDirection::Area,
             },
-            None,
             &mut rng,
         )
     }
@@ -554,7 +435,6 @@ mod tests {
                 reach: EffectReach::Exact(2),
                 direction: EffectDirection::Orthogonal,
             },
-            None,
             &mut rng,
         )
     }

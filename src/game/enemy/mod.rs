@@ -31,6 +31,12 @@ impl EnemyAbility {
             EnemyAbility::Attack { .. } => 500,
         }
     }
+
+    fn effect_target(&self) -> EffectTarget {
+        match self {
+            EnemyAbility::Attack { target, .. } => target.clone(),
+        }
+    }
 }
 
 #[derive(Resource, Deref, DerefMut, Debug, Default)]
@@ -130,7 +136,13 @@ fn process_queue(
                             or_return!(grid.world_to_tile(player_t.translation().truncate()));
 
                         // todo: this should take effect into account to allow for pathfinding based on EffectTarget tiles instead of specific implementations
-                        let path = grid.path_next_to_target(tile, player_tile, *tile_dir, &mut rng);
+                        let path = grid.path_to_reach_effect_target(
+                            tile,
+                            player_tile,
+                            *tile_dir,
+                            enemy_ability.effect_target(),
+                            &mut rng,
+                        );
                         tracing::warn!(?tile, ?player_tile, ?path);
                         if let Some(path) = path
                             && let Some(to) = path.first()
