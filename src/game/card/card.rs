@@ -56,6 +56,20 @@ impl Card {
             CardEffectTrigger::TileSelection(_) => COL_CARD_OUTLINE_TILE_CARD,
         }
     }
+
+    // fn effect_icon(&self, sprites: &Sprites) -> Option<Handle<Image>> {}
+
+    fn discard_effect_icon(&self, sprites: &Sprites) -> Option<Handle<Image>> {
+        self.discard_trigger.as_ref().map(|effect| match effect {
+            CardEffect::TempOffset(offset) => {
+                if *offset > 0 {
+                    sprites.card_temp_up.clone()
+                } else {
+                    sprites.card_temp_down.clone()
+                }
+            }
+        })
+    }
 }
 
 #[derive(EntityEvent)]
@@ -67,8 +81,6 @@ pub struct CardFocused;
 
 #[derive(Component, Clone, Copy, PartialEq, Default)]
 pub struct SelectedTileTriggerCard;
-
-relationship_1_to_1!(CardContent, CardContentRoot);
 
 pub fn card(
     card: Card,
@@ -84,6 +96,7 @@ pub fn card(
     let card_temp_up_handle = sprites.card_temp_up.clone();
     let tile_handle = sprites.tile_inner.clone();
     let tile_outline_handle = sprites.tile_outline.clone();
+    let discard_effect_handle = card.discard_effect_icon(&sprites);
 
     let pos = hand_card_pos(hand_i, hand_size) + Vec3::Y * -200.;
 
@@ -124,16 +137,12 @@ pub fn card(
 
                     b.spawn((
                         Name::new("card_content"),
-                        CardContent(b.target_entity()),
                         Sprite {
                             image: card_inner_handle,
                             color: COL_CARD,
                             ..default()
                         },
-                        Pickable {
-                            should_block_lower: false,
-                            is_hoverable: true,
-                        },
+                        Pickable::IGNORE,
                         Transform::from_xyz(0., 0., 0.05),
                         children![
                             (card_face(
@@ -141,7 +150,8 @@ pub fn card(
                                 card_corner_handle,
                                 card_temp_up_handle,
                                 tile_handle,
-                                tile_outline_handle
+                                tile_outline_handle,
+                                discard_effect_handle
                             ))
                         ],
                     ));
@@ -192,6 +202,7 @@ fn card_face(
     card_temp_up_handle: Handle<Image>,
     tile_handle: Handle<Image>,
     tile_outline: Handle<Image>,
+    discard_effect_handle: Option<Handle<Image>>,
 ) -> impl Bundle {
     (
         Name::new("card_face"),
@@ -218,15 +229,15 @@ fn card_face(
                             (
                                 Sprite {
                                     image: card_temp_up_handle.clone(),
-                                    color: COL_CARD_TEMP_COST,
+                                    color: COL_CARD_TEMP_UP,
                                     ..default()
                                 },
-                                Transform::from_xyz(8., 1., 0.)
+                                Transform::from_xyz(8., 0., 0.)
                             ),
                             (
                                 Text2d::new(temp_offset.abs().to_string()),
                                 TextFont::from_font_size(35.),
-                                TextColor::from(COL_CARD_TEMP_COST),
+                                TextColor::from(COL_CARD_TEMP_UP),
                                 Transform::from_xyz(-14., 0., 0.)
                             )
                         ],
@@ -245,7 +256,7 @@ fn card_face(
                     CardEffectTrigger::TileSelection(action) => {
                         b.spawn((
                             Name::new("effect_tiles"),
-                            Transform::from_translation(Vec3::Y * -15.),
+                            Transform::from_translation(Vec3::Y * -23.),
                             Visibility::default(),
                         ))
                         .with_children(|b| {
@@ -282,19 +293,22 @@ fn card_face(
                 }
 
                 if card.discard_trigger.is_some() {
+                    let discard_effect_handle =
+                        discard_effect_handle.expect("missing discard effect icon");
                     b.spawn((
                         Name::new("discard_bg"),
-                        Sprite::from_color(RED_400, Vec2::new(150., 50.)),
-                        Transform::from_xyz(0., -85., 0.),
-                        Pickable {
-                            should_block_lower: true,
-                            is_hoverable: true,
+                        Sprite {
+                            image: card_corner_handle.clone(),
+                            color: COL_CARD_BORDER_DISCARD,
+                            flip_x: true,
+                            ..default()
                         },
-                        children![(
-                            Name::new("discard"),
-                            Text2d::new("discard".to_string()),
-                            TextColor::from(BLACK),
-                        )],
+                        Transform::from_xyz(57., 81., 0.),
+                        children![(Sprite {
+                            image: discard_effect_handle,
+                            color: COL_CARD_TEMP_DOWN,
+                            ..default()
+                        },),],
                     ))
                     .observe(stop_pointer_event_propagation::<Click>)
                     .observe(handle_discard_click)
