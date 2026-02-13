@@ -19,6 +19,9 @@ pub struct Sprites {
     pub card_inner: Handle<Image>,
     #[asset(path = "images/card/corner.png")]
     pub card_corner: Handle<Image>,
+    #[asset(path = "images/card/temp_up.png")]
+    pub card_temp_up: Handle<Image>,
+    // tiles
     #[asset(path = "images/tile/tile_inner.png")]
     pub tile_inner: Handle<Image>,
     #[asset(path = "images/tile/tile_outline.png")]

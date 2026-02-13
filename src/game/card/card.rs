@@ -81,6 +81,7 @@ pub fn card(
     let card_inner_handle = sprites.card_inner.clone();
     let card_border_handle = sprites.card_border.clone();
     let card_corner_handle = sprites.card_corner.clone();
+    let card_temp_up_handle = sprites.card_temp_up.clone();
     let tile_handle = sprites.tile_inner.clone();
     let tile_outline_handle = sprites.tile_outline.clone();
 
@@ -135,7 +136,13 @@ pub fn card(
                         },
                         Transform::from_xyz(0., 0., 0.05),
                         children![
-                            (card_face(card, card_corner_handle, tile_handle, tile_outline_handle))
+                            (card_face(
+                                card,
+                                card_corner_handle,
+                                card_temp_up_handle,
+                                tile_handle,
+                                tile_outline_handle
+                            ))
                         ],
                     ));
 
@@ -182,6 +189,7 @@ pub fn card(
 fn card_face(
     card: Card,
     card_corner_handle: Handle<Image>,
+    card_temp_up_handle: Handle<Image>,
     tile_handle: Handle<Image>,
     tile_outline: Handle<Image>,
 ) -> impl Bundle {
@@ -205,12 +213,23 @@ fn card_face(
                             color: COL_CARD_TEMP_COST_BG,
                             ..default()
                         },
-                        Transform::from_xyz(-59., 77., 0.),
-                        children![(
-                            Text2d::new(temp_offset.to_string()),
-                            TextColor::from(if temp_offset > 0 { GREEN_400 } else { RED_400 }),
-                            // Transform::from_translation(Vec3::new(50., 90., 0.)),
-                        )],
+                        Transform::from_xyz(-57., 81., 0.),
+                        children![
+                            (
+                                Sprite {
+                                    image: card_temp_up_handle.clone(),
+                                    color: COL_CARD_TEMP_COST,
+                                    ..default()
+                                },
+                                Transform::from_xyz(8., 1., 0.)
+                            ),
+                            (
+                                Text2d::new(temp_offset.abs().to_string()),
+                                TextFont::from_font_size(35.),
+                                TextColor::from(COL_CARD_TEMP_COST),
+                                Transform::from_xyz(-14., 0., 0.)
+                            )
+                        ],
                     ));
                 }
 
