@@ -28,5 +28,6 @@ pub use tiny_bail::prelude::*;
 pub use crate::animation::tween;
 pub use crate::assets::*;
 pub use crate::game::prelude::*;
+pub use crate::theme::palette::*;
 pub use crate::theme::prelude::*;
 pub use crate::utils::prelude::*;

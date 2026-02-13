@@ -139,50 +139,16 @@ fn card_index_from_slice(entities: &[Entity], entity: Entity) -> usize {
 
 fn hand_card_pos(card_index: usize, pile_size: usize) -> Vec3 {
     let pos_mult = card_index_mult(card_index, pile_size);
-    Vec3::new(
-        pos_mult * 150.,
-        -290. - pos_mult.abs() * 25.,
-        pos_mult / 10. + 1.,
-    )
+    Vec3::new(pos_mult * 200., -310., pos_mult / 10. + 1.)
 }
 
-pub fn hand_card_pos_with_offset(card_index: usize, pile_size: usize, rng: &mut ThreadRng) -> Vec3 {
-    let max_offset = 10f32;
-    hand_card_pos(card_index, pile_size)
-        + Vec3::new(
-            rng.random_range(-max_offset..max_offset),
-            rng.random_range(-max_offset..max_offset),
-            0.,
-        )
-}
-
-pub fn hand_card_rot_with_offset(card_index: usize, pile_size: usize, rng: &mut ThreadRng) -> f32 {
-    let max_rot_offset = 5f32;
-    hand_card_rot(card_index, pile_size)
-        + rng
-            .random_range(-max_rot_offset..max_rot_offset)
-            .to_radians()
-}
-
-fn hand_card_rot(card_index: usize, pile_size: usize) -> f32 {
-    let i = card_index_mult(card_index, pile_size);
-    (-10. * i).to_radians()
-}
-
-fn card_added_to_hand(
-    trig: On<Add, HandCard>,
-    mut cmd: Commands,
-    hand: Single<&CardsInHand>,
-    rotation_q: Query<&RotationRoot>,
-) {
+fn card_added_to_hand(trig: On<Add, HandCard>, mut cmd: Commands, hand: Single<&CardsInHand>) {
     tracing::debug!("card added to hand");
     or_return!(cmd.get_entity(trig.event_target()))
         .observe(insert_default_on_event::<Pointer<Over>, (), CardFocused>)
         .observe(remove_on_event::<CardPointerOut, (), CardFocused>)
         .observe(on_card_click)
         .observe(move_focused_card)
-        .observe(rotate_focused_card)
-        .observe(rotate_unfocused_card)
         .observe(move_unfocused_card)
         .observe(tween::tween_related_sprite_color_on_trigger::<
             Add,
@@ -198,23 +164,15 @@ fn card_added_to_hand(
         .observe(move_deselected_card);
 
     let animation_duration = 300;
-    let mut rng = rng();
     let mut whole_hand = hand.entities().to_vec();
     // new card is not in the target pile yet
     whole_hand.push(trig.event_target());
     for (i, e) in whole_hand.iter().enumerate() {
-        let pos = hand_card_pos_with_offset(i, whole_hand.len(), &mut rng);
-        let rot = hand_card_rot_with_offset(i, whole_hand.len(), &mut rng);
+        let pos = hand_card_pos(i, whole_hand.len());
         or_continue!(cmd.get_entity(*e)).try_insert(tween::get_relative_translation_3d_anim(
             pos,
             animation_duration,
             Some(EaseFunction::BackOut),
-        ));
-        let rot_e = or_continue!(rotation_q.get(*e)).entity();
-        or_continue!(cmd.get_entity(rot_e)).try_insert(tween::get_relative_z_rotation_anim(
-            rot,
-            animation_duration,
-            None,
         ));
     }
 }
@@ -224,27 +182,18 @@ fn restore_empty_piles<T: RelationshipTarget>(trig: On<Remove, T>, mut cmd: Comm
     or_return!(cmd.get_entity(trig.event_target())).insert(Piles::default());
 }
 
-fn reposition_hand_cards(
-    piles_q: Query<&CardsInHand, Changed<CardsInHand>>,
-    mut cmd: Commands,
-    rotation_q: Query<&RotationRoot, Without<SelectedTileTriggerCard>>,
-) {
+fn reposition_hand_cards(piles_q: Query<&CardsInHand, Changed<CardsInHand>>, mut cmd: Commands) {
     let hand = or_return_quiet!(piles_q.single());
     if !hand.is_empty() {
         // hand cards have changed => just tween their positions
         let anim_dur_ms = 200;
-        let mut rng = rng();
         for (i, e) in hand.entities().iter().enumerate() {
-            let pos = hand_card_pos_with_offset(i, hand.len(), &mut rng);
-            let rot = hand_card_rot_with_offset(i, hand.len(), &mut rng);
+            let pos = hand_card_pos(i, hand.len());
             or_return_quiet!(cmd.get_entity(*e)).insert(tween::get_relative_translation_anim(
                 pos.truncate(),
                 anim_dur_ms,
                 None,
             ));
-            let rotation_root = or_return_quiet!(rotation_q.get(*e));
-            or_return_quiet!(cmd.get_entity(rotation_root.entity()))
-                .insert(tween::get_relative_z_rotation_anim(rot, anim_dur_ms, None));
         }
     }
 }
@@ -316,30 +265,6 @@ fn move_focused_card(
     ));
 }
 
-fn rotate_focused_card(
-    trig: On<Add, CardFocused>,
-    mut cmd: Commands,
-    card_q: Query<&RotationRoot, Without<SelectedTileTriggerCard>>,
-) {
-    let rotation_root = or_return_quiet!(card_q.get(trig.event_target()));
-    or_return_quiet!(cmd.get_entity(rotation_root.entity()))
-        .insert(tween::get_relative_z_rotation_anim(0., 250, None));
-}
-
-fn rotate_unfocused_card(
-    trig: On<Remove, CardFocused>,
-    mut cmd: Commands,
-    card_q: Query<&RotationRoot, Without<SelectedTileTriggerCard>>,
-    hand: Single<&CardsInHand>,
-) {
-    let rotation_root = or_return_quiet!(card_q.get(trig.event_target()));
-    let i = card_index_from_slice(hand.entities(), trig.event_target());
-    let rot = hand_card_rot_with_offset(i, hand.len(), &mut rng());
-
-    or_return_quiet!(cmd.get_entity(rotation_root.entity()))
-        .insert(tween::get_relative_z_rotation_anim(rot, 250, None));
-}
-
 fn move_unfocused_card(
     trig: On<Remove, CardFocused>,
     mut cmd: Commands,
@@ -352,7 +277,7 @@ fn move_unfocused_card(
         return;
     }
     let i = card_index_from_slice(hand.entities(), trig.event_target());
-    let pos = hand_card_pos_with_offset(i, hand.len(), &mut rng());
+    let pos = hand_card_pos(i, hand.len());
 
     or_return!(cmd.get_entity(card_e)).insert(Animator::new(Tracks::new([
         tween::get_relative_translation_tween(pos.truncate(), 250, Some(EaseFunction::BackOut)),

@@ -66,11 +66,13 @@ relationship_1_to_1!(CardFace, CardFaceRoot);
 pub fn card(
     card: Card,
     position: Vec3,
-    rotation: Rot2,
     hover_mesh: Handle<Mesh>,
     sprites: &Sprites,
 ) -> impl Bundle {
     let card_outer_handle = sprites.card_outer.clone();
+    let card_inner_handle = sprites.card_inner.clone();
+    let card_border_handle = sprites.card_border.clone();
+
     (
         Name::new("card"),
         card,
@@ -85,14 +87,21 @@ pub fn card(
                         should_block_lower: false,
                         is_hoverable: true,
                     },
-                    Transform::from_rotation(Quat::from_rotation_z(rotation.as_radians())),
                     ChildRotation(b.target_entity()),
                     Visibility::default(),
                     children![(
-                        Name::new("card_content"),
-                        CardContent(b.target_entity()),
-                        Sprite::from_color(AMBER_100, Vec2::new(150., 230.)),
-                        Transform::from_xyz(0., 0., 0.05),
+                        Name::new("card_border"),
+                        Sprite::from_image(card_border_handle),
+                        children![(
+                            Name::new("card_content"),
+                            CardContent(b.target_entity()),
+                            Sprite {
+                                image: card_inner_handle,
+                                color: COL_CARD,
+                                ..default()
+                            },
+                            Transform::from_xyz(0., 0., 0.05),
+                        )]
                     )],
                 ))
                 .observe(tween::tween_sprite_color_on_trigger_with::<

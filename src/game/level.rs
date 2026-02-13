@@ -20,15 +20,9 @@ fn spawn_level(
     let card_hover_mesh = meshes.add(Rectangle::new(230., 570.));
     for (i, card) in starting_debug_deck().into_iter().enumerate() {
         let i = i as i16 - 3;
-        let (pos, rot) = draw_pile_card_pos_rot(&mut rng, i);
-        cmd.spawn(card::card(
-            card,
-            pos,
-            Rot2::degrees(rot),
-            card_hover_mesh.clone(),
-            &sprites,
-        ))
-        .insert(DrawPileCard(piles_e));
+        let (pos, _) = draw_pile_card_pos_rot(&mut rng, i);
+        cmd.spawn(card::card(card, pos, card_hover_mesh.clone(), &sprites))
+            .insert(DrawPileCard(piles_e));
     }
 
     let grid = Grid::new(5, 5);

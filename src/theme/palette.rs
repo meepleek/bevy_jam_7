@@ -38,10 +38,13 @@ pub const COL_TURQUOISE_DARK: Color = Color::srgb_u8(69, 147, 165);
 pub const COL_CYAN_NEON: Color = Color::srgb_u8(94, 253, 247);
 pub const COL_PINK_NEON: Color = Color::srgb_u8(255, 93, 204);
 pub const COL_YELLOW_NEON: Color = Color::srgb_u8(253, 254, 137);
-pub const COL_LIGHT: Color = Color::srgb_u8(255, 255, 255);
+// pub const COL_LIGHT: Color = Color::srgb_u8(255, 255, 255);
+pub const COL_LIGHT: Color = COL_YELLOW;
 
 // reds from
 // https://lospec.com/palette-list/cyberpunk-neons
 pub const COL_RED_NEON: Color = Color::srgb_u8(193, 17, 90);
 pub const COL_RED: Color = Color::srgb_u8(225, 58, 106);
 pub const COL_RED_LIGHT: Color = Color::srgb_u8(228, 106, 135);
+
+pub const COL_CARD: Color = COL_LIGHT;
