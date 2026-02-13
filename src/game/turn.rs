@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{game::card, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<TurnOrder>()
@@ -44,37 +44,48 @@ fn end_turn_on_empty_hand(
 }
 
 fn fill_hand(
-    piles_q: Query<(Entity, &DrawPile, &CardsInHand, &DiscardPile), Changed<CardsInHand>>,
+    mut piles_q: Query<
+        (Entity, &mut DrawPile, &CardsInHand, &mut DiscardPile),
+        Changed<CardsInHand>,
+    >,
     hand_size: Single<&HandSize>,
     mut cmd: Commands,
+    sprites: Res<Sprites>,
+    picking_meshes: Res<PickingMeshes>,
 ) {
-    let (piles_e, draw, hand, discard) = or_return_quiet!(piles_q.single());
-    let draw_count = (hand_size.as_usize() - hand.len()).max(0);
+    let (piles_e, mut draw_pile, hand, mut discard_pile) = or_return_quiet!(piles_q.single_mut());
+    let current_hand_len = hand.len();
+    let draw_count = (hand_size.as_usize() - current_hand_len).max(0);
     if draw_count == 0 {
         return;
     }
 
-    let mut cards_to_draw = Vec::new();
-    for e in draw.entities().iter().rev().take(draw_count) {
-        or_continue!(cmd.get_entity(*e)).try_remove::<DrawPileCard>();
-        cards_to_draw.push(*e);
-    }
+    let drap_pile_size = draw_pile.len();
+    let mut cards_to_draw: Vec<_> = draw_pile.drain(0..draw_count.min(drap_pile_size)).collect();
     if cards_to_draw.len() < draw_count {
         // not enough cards in the draw pile
         // shuffle the discard, take the rest from there, then move to rest to the draw pile
-        let mut new_draw: Vec<_> = discard.entities().iter().cloned().collect();
+        let mut new_draw: Vec<_> = discard_pile.drain(..).collect();
         let mut rng = rng();
         new_draw.shuffle(&mut rng);
-        for e in new_draw {
-            or_continue!(cmd.get_entity(e)).try_remove::<DiscardPileCard>();
+        for card in new_draw {
             if cards_to_draw.len() < draw_count {
-                cards_to_draw.push(e);
+                cards_to_draw.push(card);
             } else {
-                or_continue!(cmd.get_entity(e)).try_insert(DrawPileCard(piles_e));
+                draw_pile.push(card);
             }
         }
     }
-    for e in cards_to_draw {
-        or_continue!(cmd.get_entity(e)).try_insert(HandCard(piles_e));
+    for (i, card) in cards_to_draw.into_iter().enumerate() {
+        cmd.spawn((
+            HandCard(piles_e),
+            card::card(
+                card,
+                current_hand_len + i,
+                hand_size.as_usize(),
+                picking_meshes.card_hover.clone(),
+                &sprites,
+            ),
+        ));
     }
 }

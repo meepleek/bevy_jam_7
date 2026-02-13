@@ -74,6 +74,10 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 - allow players to carry over 1 card & 1 ability from a failed run
 - push yr luck (some abilities tempting players to stay at low/high temp)
 
+### Other ideas
+
+- fixed card order -> temp cost is based on/offset by card index
+
 ### Possible (focused) strategies
 
 - regular attack-based

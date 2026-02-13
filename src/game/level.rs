@@ -1,29 +1,17 @@
-use crate::game::card;
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(GameplayPhase::LevelSpawn), spawn_level);
 }
 
-fn spawn_level(
-    mut cmd: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut next_phase: ResMut<NextState<GameplayPhase>>,
-    sprites: Res<Sprites>,
-) {
-    let mut rng = rng();
+fn spawn_level(mut cmd: Commands, mut next_phase: ResMut<NextState<GameplayPhase>>) {
     cmd.insert_resource(Temp::default());
     cmd.spawn((Name::new("Character"), HandSize::default()));
-    let piles_e = cmd
-        .spawn((Name::new("Piles"), Piles { first_hand: true }))
-        .id();
-    let card_hover_mesh = meshes.add(Rectangle::new(230., 570.));
-    for (i, card) in starting_debug_deck().into_iter().enumerate() {
-        let i = i as i16 - 3;
-        let (pos, _) = draw_pile_card_pos_rot(&mut rng, i);
-        cmd.spawn(card::card(card, pos, card_hover_mesh.clone(), &sprites))
-            .insert(DrawPileCard(piles_e));
-    }
+    cmd.spawn((
+        Name::new("Piles"),
+        Piles { first_hand: true },
+        DrawPile(starting_debug_deck().into_iter().collect()),
+    ));
 
     let grid = Grid::new(5, 5);
     cmd.spawn((

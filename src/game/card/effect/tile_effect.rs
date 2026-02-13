@@ -113,9 +113,10 @@ impl TileCardEffect {
 fn play_selected_tile_card(
     event: On<PlaySelectedTileCard>,
     player: Single<Entity, With<Player>>,
-    discard_pile: Single<Entity, With<DiscardPile>>,
+    // discard_pile: Single<Entity, With<DiscardPile>>,
     card_q: Query<&Card>,
     mut cmd: Commands,
+    mut cards: Cards,
 ) {
     use TileCardEffect::*;
     let card = or_return!(card_q.get(event.card_e));
@@ -144,10 +145,7 @@ fn play_selected_tile_card(
             unreachable!();
         }
     }
-    or_return!(cmd.get_entity(event.card_e))
-        .try_remove::<SelectedTileTriggerCard>()
-        .try_remove::<HandCard>()
-        .try_insert(DiscardPileCard(discard_pile.into_inner()));
+    cards.discard_card(event.card_e);
 }
 
 fn process_selected_tile_trigger_card(
