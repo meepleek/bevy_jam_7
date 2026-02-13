@@ -28,6 +28,11 @@ pub struct Sprites {
     pub tile_inner: Handle<Image>,
     #[asset(path = "images/tile/tile_outline.png")]
     pub tile_outline: Handle<Image>,
+    // effects
+    #[asset(path = "images/effect/move.png")]
+    pub effect_move: Handle<Image>,
+    #[asset(path = "images/effect/attack.png")]
+    pub effect_attack: Handle<Image>,
 }
 
 #[derive(Resource)]

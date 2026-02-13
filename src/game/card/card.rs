@@ -1,4 +1,3 @@
-use bevy::color::palettes::css::BLACK;
 use bevy_tweening::Animator;
 use bevy_tweening::BoxedTweenable;
 use bevy_tweening::Sequence;
@@ -57,18 +56,34 @@ impl Card {
         }
     }
 
-    // fn effect_icon(&self, sprites: &Sprites) -> Option<Handle<Image>> {}
+    fn trigger_effect_icon(&self, sprites: &Sprites) -> Handle<Image> {
+        match &self.effect_trigger {
+            CardEffectTrigger::CardSelection(card_effect) => {
+                Self::card_effect_icon(card_effect.clone(), sprites)
+            }
+            CardEffectTrigger::TileSelection(tile_card_effect) => match tile_card_effect {
+                TileCardEffect::Move { .. } => sprites.effect_move.clone(),
+                TileCardEffect::Attack { .. } => sprites.effect_attack.clone(),
+            },
+        }
+    }
 
     fn discard_effect_icon(&self, sprites: &Sprites) -> Option<Handle<Image>> {
-        self.discard_trigger.as_ref().map(|effect| match effect {
+        self.discard_trigger
+            .as_ref()
+            .map(|effect| Self::card_effect_icon(effect.clone(), sprites))
+    }
+
+    fn card_effect_icon(card_effect: CardEffect, sprites: &Sprites) -> Handle<Image> {
+        match card_effect {
             CardEffect::TempOffset(offset) => {
-                if *offset > 0 {
+                if offset > 0 {
                     sprites.card_temp_up.clone()
                 } else {
                     sprites.card_temp_down.clone()
                 }
             }
-        })
+        }
     }
 }
 
@@ -97,6 +112,7 @@ pub fn card(
     let tile_handle = sprites.tile_inner.clone();
     let tile_outline_handle = sprites.tile_outline.clone();
     let discard_effect_handle = card.discard_effect_icon(&sprites);
+    let trigger_effect_handle = card.trigger_effect_icon(&sprites);
 
     let pos = hand_card_pos(hand_i, hand_size) + Vec3::Y * -200.;
 
@@ -153,6 +169,7 @@ pub fn card(
                                 card_temp_up_handle,
                                 tile_handle,
                                 tile_outline_handle,
+                                trigger_effect_handle,
                                 discard_effect_handle,
                                 border_e
                             ))
@@ -205,18 +222,24 @@ fn card_face(
     card_temp_up_handle: Handle<Image>,
     tile_handle: Handle<Image>,
     tile_outline: Handle<Image>,
+    trigger_effect_handle: Handle<Image>,
     discard_effect_handle: Option<Handle<Image>>,
     border_e: Entity,
 ) -> impl Bundle {
+    let effect_palette = card.effect_trigger.effect_palette();
     (
         Name::new("card_face"),
         Visibility::default(),
         Transform::from_translation(Vec3::Z * 0.06),
         children![(
-            Name::new("card_title"),
-            Text2d::new(card.effect_trigger.title()),
-            TextColor::from(BLACK),
-            Transform::from_translation(Vec3::Y * 90.),
+            Name::new("card_effect"),
+            Sprite {
+                image: trigger_effect_handle,
+                color: effect_palette.highlighted,
+                ..default()
+            },
+            Pickable::IGNORE,
+            Transform::from_translation(Vec3::Y * 81.),
         )],
         BundleEffect::new(move |b| {
             b.with_children(move |b| {
@@ -228,6 +251,7 @@ fn card_face(
                             color: COL_CARD_TEMP_COST_BG,
                             ..default()
                         },
+                        Pickable::IGNORE,
                         Transform::from_xyz(-57., 81., 0.),
                         children![
                             (
@@ -236,6 +260,7 @@ fn card_face(
                                     color: COL_CARD_TEMP_UP,
                                     ..default()
                                 },
+                                Pickable::IGNORE,
                                 Transform::from_xyz(8., 0., 0.1)
                             ),
                             (
@@ -278,7 +303,7 @@ fn card_face(
                                 if tile == Coords::ZERO {
                                     color = COL_CARD_CENTER_TILE;
                                 } else if effect_tiles.contains(&tile) {
-                                    color = COL_TILE_VALID;
+                                    color = effect_palette.highlighted;
                                 } else {
                                     image = tile_outline.clone();
                                 }

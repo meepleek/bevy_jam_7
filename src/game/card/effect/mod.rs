@@ -28,23 +28,23 @@ pub enum CardEffectTrigger {
     TileSelection(TileCardEffect),
 }
 impl CardEffectCommon for CardEffectTrigger {
-    fn title(&self) -> &str {
-        match self {
-            CardEffectTrigger::CardSelection(action) => action.title(),
-            CardEffectTrigger::TileSelection(action) => action.title(),
-        }
-    }
-
     fn temp_offset(&self) -> Option<i8> {
         match self {
             CardEffectTrigger::CardSelection(action) => action.temp_offset(),
             CardEffectTrigger::TileSelection(action) => action.temp_offset(),
         }
     }
+
+    fn effect_palette(&self) -> CardEffectPalette {
+        match self {
+            CardEffectTrigger::CardSelection(card_effect) => card_effect.effect_palette(),
+            CardEffectTrigger::TileSelection(tile_card_effect) => tile_card_effect.effect_palette(),
+        }
+    }
 }
 
 pub trait CardEffectCommon {
-    fn title(&self) -> &str;
+    fn effect_palette(&self) -> CardEffectPalette;
     fn temp_offset(&self) -> Option<i8>;
     // todo: kind
     // like action, passive, timed passive?

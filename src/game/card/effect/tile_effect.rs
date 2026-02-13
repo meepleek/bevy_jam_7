@@ -69,18 +69,21 @@ pub enum TileCardEffect {
     },
 }
 impl CardEffectCommon for TileCardEffect {
-    fn title(&self) -> &str {
-        use TileCardEffect::*;
-        match self {
-            Move { .. } => "Move",
-            Attack { .. } => "Attack",
-        }
-    }
-
     fn temp_offset(&self) -> Option<i8> {
         use TileCardEffect::*;
         match self {
             Move { temp_offset, .. } | Attack { temp_offset, .. } => Some(-(*temp_offset)),
+        }
+    }
+
+    fn effect_palette(&self) -> CardEffectPalette {
+        match self {
+            TileCardEffect::Move { .. } => {
+                CardEffectPalette::new(COL_CARD_EFFECT_MOVEMENT, COL_CARD_EFFECT_MOVEMENT_HOVER)
+            }
+            TileCardEffect::Attack { .. } => {
+                CardEffectPalette::new(COL_CARD_EFFECT_ATTACK, COL_CARD_EFFECT_ATTACK_HOVER)
+            }
         }
     }
 }

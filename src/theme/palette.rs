@@ -59,7 +59,32 @@ pub const COL_CARD_TEMP_UP: Color = COL_RED_LIGHT;
 pub const COL_CARD_TEMP_DOWN: Color = COL_SNOW;
 pub const COL_CARD_CENTER_TILE: Color = COL_CARD_BORDER;
 pub const COL_CARD_INVALID_TILE: Color = Color::srgb_u8(172, 172, 200);
+pub const COL_CARD_EFFECT_MOVEMENT: Color = COL_GREEN;
+pub const COL_CARD_EFFECT_MOVEMENT_HOVER: Color = COL_GREEN_DARK;
+pub const COL_CARD_EFFECT_ATTACK: Color = COL_ORANGE;
+pub const COL_CARD_EFFECT_ATTACK_HOVER: Color = COL_RED_LIGHT;
 
 // tiles
 pub const COL_TILE_VALID: Color = COL_GREEN;
 pub const COL_TILE_VALID_HOVER: Color = COL_GREEN_DARK;
+
+#[derive(Debug, Clone, Copy)]
+pub struct CardEffectPalette {
+    pub highlighted: Color,
+    pub hover: Color,
+}
+impl CardEffectPalette {
+    pub fn new(highlighted: impl Into<Color>, hover: impl Into<Color>) -> Self {
+        Self {
+            highlighted: highlighted.into(),
+            hover: hover.into(),
+        }
+    }
+
+    pub fn single_color(color: impl Into<Color> + Clone) -> Self {
+        Self {
+            highlighted: color.clone().into(),
+            hover: color.into(),
+        }
+    }
+}
