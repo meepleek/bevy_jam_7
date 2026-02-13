@@ -116,24 +116,26 @@ pub fn card(
         BundleEffect::new(move |e_cmd| {
             e_cmd
                 .with_children(|b| {
-                    b.spawn((
-                        Name::new("card_border"),
-                        Sprite {
-                            image: card_border_handle,
-                            color: COL_CARD_BORDER,
-                            ..default()
-                        },
-                        Transform::from_xyz(0., 0., 0.5),
-                        ChildRotation(b.target_entity()),
-                        Pickable {
-                            should_block_lower: false,
-                            is_hoverable: true,
-                        },
-                    ))
-                    .observe(tween::tween_sprite_color_on_trigger_with::<
-                        ColorCardBorder,
-                        (),
-                    >(|ev| ev.color));
+                    let border_e = b
+                        .spawn((
+                            Name::new("card_border"),
+                            Sprite {
+                                image: card_border_handle,
+                                color: COL_CARD_BORDER,
+                                ..default()
+                            },
+                            Transform::from_xyz(0., 0., 0.5),
+                            ChildRotation(b.target_entity()),
+                            Pickable {
+                                should_block_lower: false,
+                                is_hoverable: true,
+                            },
+                        ))
+                        .observe(tween::tween_sprite_color_on_trigger_with::<
+                            ColorCardBorder,
+                            (),
+                        >(|ev| ev.color))
+                        .id();
 
                     b.spawn((
                         Name::new("card_content"),
@@ -151,7 +153,8 @@ pub fn card(
                                 card_temp_up_handle,
                                 tile_handle,
                                 tile_outline_handle,
-                                discard_effect_handle
+                                discard_effect_handle,
+                                border_e
                             ))
                         ],
                     ));
@@ -203,6 +206,7 @@ fn card_face(
     tile_handle: Handle<Image>,
     tile_outline: Handle<Image>,
     discard_effect_handle: Option<Handle<Image>>,
+    border_e: Entity,
 ) -> impl Bundle {
     (
         Name::new("card_face"),
@@ -215,7 +219,7 @@ fn card_face(
             Transform::from_translation(Vec3::Y * 90.),
         )],
         BundleEffect::new(move |b| {
-            b.with_children(|b| {
+            b.with_children(move |b| {
                 if let Some(temp_offset) = card.effect_trigger.temp_offset() {
                     b.spawn((
                         Name::new("temp_offset"),
@@ -319,14 +323,24 @@ fn card_face(
                     ))
                     .observe(stop_pointer_event_propagation::<Click>)
                     .observe(handle_discard_click)
-                    .observe(map_pointer_event::<Over, _>(|entity, _| ColorCardBorder {
-                        entity,
-                        color: COL_CARD_BORDER_DISCARD.into(),
+                    .observe(tween::tween_sprite_color_on_trigger::<Pointer<Over>, ()>(
+                        COL_CARD_BORDER_DISCARD_HOVER,
+                    ))
+                    .observe(tween::tween_sprite_color_on_trigger::<Pointer<Out>, ()>(
+                        COL_CARD_BORDER_FOCUS,
+                    ))
+                    .observe(map_pointer_event::<Over, _>(move |_entity, _| {
+                        ColorCardBorder {
+                            entity: border_e,
+                            color: COL_CARD_BORDER_DISCARD_HOVER.into(),
+                        }
                     }))
-                    .observe(map_pointer_event::<Out, _>(|entity, _| ColorCardBorder {
-                        entity,
-                        color: COL_CARD_BORDER_FOCUS.into(),
-                    }));
+                    .observe(map_pointer_event::<Out, _>(
+                        move |_entity, _| ColorCardBorder {
+                            entity: border_e,
+                            color: COL_CARD_BORDER_FOCUS.into(),
+                        },
+                    ));
                 }
             });
         }),
