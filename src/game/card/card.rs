@@ -232,7 +232,7 @@ fn card_face(
                                     color: COL_CARD_TEMP_UP,
                                     ..default()
                                 },
-                                Transform::from_xyz(8., 0., 0.)
+                                Transform::from_xyz(8., 0., 0.1)
                             ),
                             (
                                 Text2d::new(temp_offset.abs().to_string()),
@@ -303,12 +303,19 @@ fn card_face(
                             flip_x: true,
                             ..default()
                         },
+                        Pickable {
+                            should_block_lower: true,
+                            is_hoverable: true,
+                        },
                         Transform::from_xyz(57., 81., 0.),
-                        children![(Sprite {
-                            image: discard_effect_handle,
-                            color: COL_CARD_TEMP_DOWN,
-                            ..default()
-                        },),],
+                        children![(
+                            Sprite {
+                                image: discard_effect_handle,
+                                color: COL_CARD_TEMP_DOWN,
+                                ..default()
+                            },
+                            Transform::from_translation(Vec3::Z * 0.1),
+                        ),],
                     ))
                     .observe(stop_pointer_event_propagation::<Click>)
                     .observe(handle_discard_click)

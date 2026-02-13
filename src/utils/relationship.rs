@@ -36,7 +36,7 @@ macro_rules! relationship_1_to_1 {
     };
 }
 
-pub(crate) use relationship_1_to_1;
+// pub(crate) use relationship_1_to_1;
 
 relationship_1_to_1!(ChildTranslation, TranslationRoot);
 relationship_1_to_1!(ChildRotation, RotationRoot);
