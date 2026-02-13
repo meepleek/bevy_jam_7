@@ -352,7 +352,7 @@ fn card_face(
                         COL_CARD_BORDER_DISCARD_HOVER,
                     ))
                     .observe(tween::tween_sprite_color_on_trigger::<Pointer<Out>, ()>(
-                        COL_CARD_BORDER_FOCUS,
+                        COL_CARD_BORDER_DISCARD,
                     ))
                     .observe(map_pointer_event::<Over, _>(move |_entity, _| {
                         ColorCardBorder {
