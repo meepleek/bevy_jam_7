@@ -50,20 +50,6 @@ pub trait CardEffectCommon {
     // like action, passive, timed passive?
 }
 
-#[derive(Debug, Clone)]
-pub struct TileInteractionPalette {
-    pub highlight: Color,
-    pub hover: Color,
-}
-impl TileInteractionPalette {
-    pub fn new(highlight: impl Into<Color>, hover: impl Into<Color>) -> Self {
-        Self {
-            highlight: highlight.into(),
-            hover: hover.into(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum EffectDirection {
     #[allow(dead_code)]

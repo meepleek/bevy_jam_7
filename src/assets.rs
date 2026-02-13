@@ -11,12 +11,18 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(AssetCollection, Resource)]
 pub struct Sprites {
-    #[asset(path = "images/card/outer.png")]
-    pub card_outer: Handle<Image>,
+    #[asset(path = "images/card/bg.png")]
+    pub card_bg: Handle<Image>,
     #[asset(path = "images/card/border.png")]
     pub card_border: Handle<Image>,
     #[asset(path = "images/card/inner.png")]
     pub card_inner: Handle<Image>,
+    #[asset(path = "images/card/corner.png")]
+    pub card_corner: Handle<Image>,
+    #[asset(path = "images/tile/tile_inner.png")]
+    pub tile_inner: Handle<Image>,
+    #[asset(path = "images/tile/tile_outline.png")]
+    pub tile_outline: Handle<Image>,
 }
 
 #[derive(Resource)]

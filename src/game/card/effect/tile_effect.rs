@@ -100,14 +100,6 @@ impl TileCardEffect {
             Move { target, .. } | Attack { target, .. } => target.target_tiles(),
         }
     }
-
-    pub fn tile_interaction_palette(&self) -> TileInteractionPalette {
-        use TileCardEffect::*;
-        match self {
-            Move { .. } => TileInteractionPalette::new(INDIGO_400, INDIGO_800),
-            Attack { .. } => TileInteractionPalette::new(ROSE_300, RED_400),
-        }
-    }
 }
 
 fn play_selected_tile_card(
@@ -159,7 +151,6 @@ fn process_selected_tile_trigger_card(
     let player_tile = or_return!(grid.entity_to_coords(*player));
     match &card.effect_trigger {
         CardEffectTrigger::TileSelection(action) => {
-            let interaction_palette = action.tile_interaction_palette();
             for (tile, position) in action
                 .tiles()
                 .into_iter()
@@ -178,7 +169,7 @@ fn process_selected_tile_trigger_card(
                 cmd.spawn((
                     Transform::from_translation(position.extend(0.)),
                     Sprite::from_color(Color::NONE, Vec2::splat(60.)),
-                    tween::get_relative_sprite_color_anim(interaction_palette.highlight, 150, None),
+                    tween::get_relative_sprite_color_anim(COL_TILE_VALID, 150, None),
                     tween::get_absolute_scale_anim(Vec3::splat(0.5), Vec2::ONE, 180, None),
                     TileInteraction,
                     Pickable {
@@ -187,10 +178,10 @@ fn process_selected_tile_trigger_card(
                     },
                 ))
                 .observe(tween::tween_sprite_color_on_trigger::<Pointer<Over>, ()>(
-                    interaction_palette.hover,
+                    COL_TILE_VALID_HOVER,
                 ))
                 .observe(tween::tween_sprite_color_on_trigger::<Pointer<Out>, ()>(
-                    interaction_palette.highlight,
+                    COL_TILE_VALID,
                 ))
                 .observe(move |_trig: On<Pointer<Click>>, mut cmd: Commands| {
                     cmd.trigger(PlaySelectedTileCard {

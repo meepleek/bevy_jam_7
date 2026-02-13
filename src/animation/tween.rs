@@ -502,7 +502,7 @@ pub fn tween_related_sprite_color_on_trigger<
     let color = color.into();
     move |ev, mut cmd, entity_q| {
         let e = tiny_bail::or_return!(entity_q.get(ev.event_target())).entity();
-        tiny_bail::or_return_quiet!(cmd.get_entity(e))
+        tiny_bail::or_return!(cmd.get_entity(e))
             .insert(get_relative_sprite_color_anim(color, 200, None));
     }
 }

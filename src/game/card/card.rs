@@ -9,10 +9,6 @@ use crate::prelude::tween::PriorityTween;
 use crate::prelude::*;
 use crate::utils::bundle_effect::BundleEffect;
 
-pub const CARD_BORDER_COL: Srgba = GRAY_950;
-pub const CARD_BORDER_COL_FOCUS: Srgba = AMBER_400;
-pub const CARD_BORDER_COL_DISCARD: Srgba = RED_500;
-
 const FOCUSED_CARD_Y: f32 = -220.;
 
 pub(super) fn plugin(_app: &mut App) {}
@@ -53,6 +49,13 @@ impl Card {
     pub fn with_cool1_discard_effect(self) -> Self {
         self.with_discard_effect(CardEffect::TempOffset(-1))
     }
+
+    fn outline_color(&self) -> Color {
+        match self.effect_trigger {
+            CardEffectTrigger::CardSelection(_) => COL_CARD_OUTLINE_ACTION_CARD,
+            CardEffectTrigger::TileSelection(_) => COL_CARD_OUTLINE_TILE_CARD,
+        }
+    }
 }
 
 #[derive(EntityEvent)]
@@ -74,57 +77,67 @@ pub fn card(
     hover_mesh: Handle<Mesh>,
     sprites: &Sprites,
 ) -> impl Bundle {
-    let card_outer_handle = sprites.card_outer.clone();
+    let card_outer_handle = sprites.card_bg.clone();
     let card_inner_handle = sprites.card_inner.clone();
     let card_border_handle = sprites.card_border.clone();
+    let card_corner_handle = sprites.card_corner.clone();
+    let tile_handle = sprites.tile_inner.clone();
+    let tile_outline_handle = sprites.tile_outline.clone();
 
     let pos = hand_card_pos(hand_i, hand_size) + Vec3::Y * -200.;
 
     (
-        Name::new("card"),
-        card.clone(),
+        Name::new("card_outline"),
+        Sprite {
+            image: card_outer_handle,
+            color: card.outline_color(),
+            ..default()
+        },
+        Pickable {
+            should_block_lower: false,
+            is_hoverable: true,
+        },
         Transform::from_translation(pos),
-        Visibility::default(),
+        card.clone(),
         BundleEffect::new(move |e_cmd| {
             e_cmd
                 .with_children(|b| {
                     b.spawn((
                         Name::new("card_border"),
-                        Sprite::from_image(card_outer_handle),
+                        Sprite {
+                            image: card_border_handle,
+                            color: COL_CARD_BORDER,
+                            ..default()
+                        },
+                        Transform::from_xyz(0., 0., 0.5),
+                        ChildRotation(b.target_entity()),
                         Pickable {
                             should_block_lower: false,
                             is_hoverable: true,
                         },
-                        ChildRotation(b.target_entity()),
-                        Visibility::default(),
-                        children![(
-                            Name::new("card_border"),
-                            Sprite::from_image(card_border_handle),
-                            Pickable {
-                                should_block_lower: false,
-                                is_hoverable: true,
-                            },
-                            children![(
-                                Name::new("card_content"),
-                                CardContent(b.target_entity()),
-                                Sprite {
-                                    image: card_inner_handle,
-                                    color: COL_CARD,
-                                    ..default()
-                                },
-                                Pickable {
-                                    should_block_lower: false,
-                                    is_hoverable: true,
-                                },
-                                Transform::from_xyz(0., 0., 0.05),
-                                children![(card_face(card),)]
-                            )]
-                        )],
                     ))
                     .observe(tween::tween_sprite_color_on_trigger_with::<
                         ColorCardBorder,
                         (),
                     >(|ev| ev.color));
+
+                    b.spawn((
+                        Name::new("card_content"),
+                        CardContent(b.target_entity()),
+                        Sprite {
+                            image: card_inner_handle,
+                            color: COL_CARD,
+                            ..default()
+                        },
+                        Pickable {
+                            should_block_lower: false,
+                            is_hoverable: true,
+                        },
+                        Transform::from_xyz(0., 0., 0.05),
+                        children![
+                            (card_face(card, card_corner_handle, tile_handle, tile_outline_handle))
+                        ],
+                    ));
 
                     b.spawn((
                         Name::new("card_hover_area"),
@@ -154,33 +167,24 @@ pub fn card(
                     Add,
                     CardFocused,
                     RotationRoot,
-                >(CARD_BORDER_COL_FOCUS))
+                >(COL_CARD_BORDER_FOCUS))
                 .observe(tween::tween_related_sprite_color_on_trigger::<
                     Remove,
                     CardFocused,
                     RotationRoot,
-                >(CARD_BORDER_COL))
+                >(COL_CARD_BORDER))
                 .observe(move_selected_card)
                 .observe(move_deselected_card);
         }),
     )
-
-    // todo: staggered transition based on i
-    // let animation_duration = 300;
-    // let mut whole_hand = hand.entities().to_vec();
-    // // new card is not in the target pile yet
-    // whole_hand.push(trig.event_target());
-    // for (i, e) in whole_hand.iter().enumerate() {
-    //     let pos = hand_card_pos(i, whole_hand.len());
-    //     or_continue!(cmd.get_entity(*e)).try_insert(tween::get_relative_translation_3d_anim(
-    //         pos,
-    //         animation_duration,
-    //         Some(EaseFunction::BackOut),
-    //     ));
-    // }
 }
 
-fn card_face(card: Card) -> impl Bundle {
+fn card_face(
+    card: Card,
+    card_corner_handle: Handle<Image>,
+    tile_handle: Handle<Image>,
+    tile_outline: Handle<Image>,
+) -> impl Bundle {
     (
         Name::new("card_face"),
         Visibility::default(),
@@ -196,9 +200,17 @@ fn card_face(card: Card) -> impl Bundle {
                 if let Some(temp_offset) = card.effect_trigger.temp_offset() {
                     b.spawn((
                         Name::new("temp_offset"),
-                        Text2d::new(temp_offset.to_string()),
-                        TextColor::from(if temp_offset > 0 { GREEN_400 } else { RED_400 }),
-                        Transform::from_translation(Vec3::new(50., 90., 0.)),
+                        Sprite {
+                            image: card_corner_handle.clone(),
+                            color: COL_CARD_TEMP_COST_BG,
+                            ..default()
+                        },
+                        Transform::from_xyz(-59., 77., 0.),
+                        children![(
+                            Text2d::new(temp_offset.to_string()),
+                            TextColor::from(if temp_offset > 0 { GREEN_400 } else { RED_400 }),
+                            // Transform::from_translation(Vec3::new(50., 90., 0.)),
+                        )],
                     ));
                 }
 
@@ -218,13 +230,31 @@ fn card_face(card: Card) -> impl Bundle {
                             Visibility::default(),
                         ))
                         .with_children(|b| {
-                            let palette = action.tile_interaction_palette();
-                            let size = 20f32;
-                            // center tile
-                            b.spawn((Sprite::from_color(ROSE_300, Vec2::splat(size - 3.)),));
-                            for tile in action.tiles() {
+                            let size = 26f32;
+                            let effect_tiles = action.tiles();
+                            let mut all_tiles_within_range = EffectTarget {
+                                reach: EffectReach::Range(2),
+                                direction: EffectDirection::Area,
+                            }
+                            .target_tiles();
+                            all_tiles_within_range.push(Coords::ZERO);
+                            for tile in all_tiles_within_range {
+                                let mut color = COL_CARD_INVALID_TILE;
+                                let mut image = tile_handle.clone();
+                                if tile == Coords::ZERO {
+                                    color = COL_CARD_CENTER_TILE;
+                                } else if effect_tiles.contains(&tile) {
+                                    color = COL_TILE_VALID;
+                                } else {
+                                    image = tile_outline.clone();
+                                }
                                 b.spawn((
-                                    Sprite::from_color(palette.highlight, Vec2::splat(size - 3.)),
+                                    Sprite {
+                                        image,
+                                        color,
+                                        custom_size: Some(Vec2::splat(size - 4.)),
+                                        ..default()
+                                    },
                                     Transform::from_translation(tile.as_vec2().extend(0.) * size),
                                 ));
                             }
@@ -251,11 +281,11 @@ fn card_face(card: Card) -> impl Bundle {
                     .observe(handle_discard_click)
                     .observe(map_pointer_event::<Over, _>(|entity, _| ColorCardBorder {
                         entity,
-                        color: CARD_BORDER_COL_DISCARD.into(),
+                        color: COL_CARD_BORDER_DISCARD.into(),
                     }))
                     .observe(map_pointer_event::<Out, _>(|entity, _| ColorCardBorder {
                         entity,
-                        color: CARD_BORDER_COL_FOCUS.into(),
+                        color: COL_CARD_BORDER_FOCUS.into(),
                     }));
                 }
             });
@@ -276,7 +306,7 @@ fn handle_discard_click(
     };
     or_return!(cmd.get_entity(e)).trigger(|entity| ColorCardBorder {
         entity,
-        color: CARD_BORDER_COL.into(),
+        color: COL_CARD_BORDER.into(),
     });
     cards.discard_card(card_e);
 }
