@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    asset_tracking::LoadResource,
-    audio::sound_effect,
+    // audio::sound_effect,
     input::focus::{FocusInteraction, UiFocus},
 };
 
@@ -11,9 +10,8 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         handle_ui_focus_change.run_if(resource_exists_and_changed::<UiFocus>),
     );
-    app.load_resource::<InteractionAssets>();
-    app.add_observer(play_sound_effect_on_click);
-    app.add_observer(play_sound_effect_on_over);
+    // app.add_observer(play_sound_effect_on_click);
+    // app.add_observer(play_sound_effect_on_over);
 }
 
 /// Palette for widget interactions. Add this to an entity that supports
@@ -54,37 +52,18 @@ fn handle_ui_focus_change(
     }
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
-#[reflect(Resource)]
-struct InteractionAssets {
-    #[dependency]
-    hover: Handle<AudioSource>,
-    #[dependency]
-    click: Handle<AudioSource>,
-}
+// fn play_sound_effect_on_click(
+//     _: On<Pointer<Click>>,
+//     interaction_assets: If<Res<InteractionAssets>>,
+//     mut commands: Commands,
+// ) {
+//     commands.spawn(sound_effect(interaction_assets.click.clone()));
+// }
 
-impl FromWorld for InteractionAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            hover: assets.load("audio/sound_effects/button_hover.ogg"),
-            click: assets.load("audio/sound_effects/button_click.ogg"),
-        }
-    }
-}
-
-fn play_sound_effect_on_click(
-    _: On<Pointer<Click>>,
-    interaction_assets: If<Res<InteractionAssets>>,
-    mut commands: Commands,
-) {
-    commands.spawn(sound_effect(interaction_assets.click.clone()));
-}
-
-fn play_sound_effect_on_over(
-    _: On<Pointer<Over>>,
-    interaction_assets: If<Res<InteractionAssets>>,
-    mut commands: Commands,
-) {
-    commands.spawn(sound_effect(interaction_assets.hover.clone()));
-}
+// fn play_sound_effect_on_over(
+//     _: On<Pointer<Over>>,
+//     interaction_assets: If<Res<InteractionAssets>>,
+//     mut commands: Commands,
+// ) {
+//     commands.spawn(sound_effect(interaction_assets.hover.clone()));
+// }

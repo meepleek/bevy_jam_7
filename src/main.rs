@@ -4,7 +4,7 @@
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
 mod animation;
-mod asset_tracking;
+pub mod assets;
 mod audio;
 mod cam;
 #[cfg(feature = "dev")]
@@ -53,7 +53,7 @@ impl Plugin for AppPlugin {
         // Add other plugins.
         app.add_plugins((
             animation::plugin,
-            asset_tracking::plugin,
+            assets::plugin,
             audio::plugin,
             cam::plugin,
             game::plugin,

@@ -9,6 +9,7 @@ fn spawn_level(
     mut cmd: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut next_phase: ResMut<NextState<GameplayPhase>>,
+    sprites: Res<Sprites>,
 ) {
     let mut rng = rng();
     cmd.insert_resource(Temp::default());
@@ -25,6 +26,7 @@ fn spawn_level(
             pos,
             Rot2::degrees(rot),
             card_hover_mesh.clone(),
+            &sprites,
         ))
         .insert(DrawPileCard(piles_e));
     }

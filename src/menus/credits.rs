@@ -6,8 +6,6 @@ use bevy::{
 };
 
 use crate::{
-    asset_tracking::LoadResource,
-    audio::music,
     input::menu::{ButtonClick, LoopingMenu},
     screens::{MainMenuState, Screen},
     theme::prelude::*,
@@ -24,12 +22,6 @@ pub(super) fn plugin(app: &mut App) {
             in_state(Screen::MainMenu(MainMenuState::Credits))
                 .and(input_just_pressed(KeyCode::Escape)),
         ),
-    );
-
-    app.load_resource::<CreditsAssets>();
-    app.add_systems(
-        OnEnter(Screen::MainMenu(MainMenuState::Credits)),
-        start_credits_music,
     );
 }
 
@@ -102,28 +94,4 @@ fn go_back_on_click(_: On<ButtonClick>, mut next: ResMut<NextState<Screen>>) {
 
 fn go_back(mut next: ResMut<NextState<Screen>>) {
     next.set(Screen::title());
-}
-
-#[derive(Resource, Asset, Clone, Reflect)]
-#[reflect(Resource)]
-struct CreditsAssets {
-    #[dependency]
-    music: Handle<AudioSource>,
-}
-
-impl FromWorld for CreditsAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            music: assets.load("audio/music/Monkeys Spinning Monkeys.ogg"),
-        }
-    }
-}
-
-fn start_credits_music(mut commands: Commands, credits_music: Res<CreditsAssets>) {
-    commands.spawn((
-        Name::new("Credits Music"),
-        DespawnOnExit(Screen::MainMenu(MainMenuState::Credits)),
-        music(credits_music.music.clone()),
-    ));
 }

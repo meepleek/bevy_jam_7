@@ -16,6 +16,7 @@ pub(super) fn plugin(app: &mut App) {
 pub struct Music;
 
 /// A music audio instance.
+#[expect(dead_code)]
 pub fn music(handle: Handle<AudioSource>) -> impl Bundle {
     (AudioPlayer(handle), PlaybackSettings::LOOP, Music)
 }
@@ -29,6 +30,7 @@ pub fn music(handle: Handle<AudioSource>) -> impl Bundle {
 pub struct SoundEffect;
 
 /// A sound effect audio instance.
+#[expect(dead_code)]
 pub fn sound_effect(handle: Handle<AudioSource>) -> impl Bundle {
     (AudioPlayer(handle), PlaybackSettings::DESPAWN, SoundEffect)
 }

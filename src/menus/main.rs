@@ -3,7 +3,6 @@
 use bevy::{input_focus::AutoFocus, prelude::*};
 
 use crate::{
-    asset_tracking::ResourceHandles,
     input::menu::{ButtonClick, LoopingMenu, menu_input},
     screens::{MainMenuState, Screen},
     theme::widget,
@@ -21,10 +20,7 @@ fn spawn_main_menu(mut commands: Commands) {
         DespawnOnExit(Screen::title()),
         #[cfg(not(target_family = "wasm"))]
         children![
-            (
-                widget::button("Play", enter_loading_or_gameplay_screen),
-                AutoFocus
-            ),
+            (widget::button("Play", enter_gameplay_screen), AutoFocus),
             widget::button("Settings", open_settings_menu),
             widget::button("Credits", open_credits_menu),
             widget::button("Exit", exit_app),
@@ -39,16 +35,8 @@ fn spawn_main_menu(mut commands: Commands) {
     ));
 }
 
-fn enter_loading_or_gameplay_screen(
-    _: On<ButtonClick>,
-    resource_handles: Res<ResourceHandles>,
-    mut next_screen: ResMut<NextState<Screen>>,
-) {
-    if resource_handles.is_all_done() {
-        next_screen.set(Screen::playing());
-    } else {
-        next_screen.set(Screen::Loading);
-    }
+fn enter_gameplay_screen(_: On<ButtonClick>, mut next_screen: ResMut<NextState<Screen>>) {
+    next_screen.set(Screen::playing());
 }
 
 fn open_settings_menu(_: On<ButtonClick>, mut next: ResMut<NextState<Screen>>) {

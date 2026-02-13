@@ -20,12 +20,13 @@ pub use bevy::prelude::*;
 pub use bevy::sprite::Anchor;
 pub use bevy::ui::FocusPolicy;
 pub use bevy::ui::Val::*;
-// pub use bevy_asset_loader::prelude::*;
+pub use bevy_asset_loader::prelude::*;
 pub use rand::prelude::*;
 pub use rand::rng;
 pub use tiny_bail::prelude::*;
 
 pub use crate::animation::tween;
+pub use crate::assets::*;
 pub use crate::game::prelude::*;
 pub use crate::theme::prelude::*;
 pub use crate::utils::prelude::*;

@@ -1,5 +1,6 @@
 use bevy::color::palettes::css::BLACK;
 
+use crate::assets::Sprites;
 use crate::prelude::*;
 use crate::utils::bundle_effect::BundleEffect;
 
@@ -62,7 +63,14 @@ pub struct SelectedTileTriggerCard;
 relationship_1_to_1!(CardContent, CardContentRoot);
 relationship_1_to_1!(CardFace, CardFaceRoot);
 
-pub fn card(card: Card, position: Vec3, rotation: Rot2, hover_mesh: Handle<Mesh>) -> impl Bundle {
+pub fn card(
+    card: Card,
+    position: Vec3,
+    rotation: Rot2,
+    hover_mesh: Handle<Mesh>,
+    sprites: &Sprites,
+) -> impl Bundle {
+    let card_outer_handle = sprites.card_outer.clone();
     (
         Name::new("card"),
         card,
@@ -72,7 +80,7 @@ pub fn card(card: Card, position: Vec3, rotation: Rot2, hover_mesh: Handle<Mesh>
             e_cmd.with_children(|b| {
                 b.spawn((
                     Name::new("card_border"),
-                    Sprite::from_color(CARD_BORDER_COL, Vec2::new(160., 240.)),
+                    Sprite::from_image(card_outer_handle),
                     Pickable {
                         should_block_lower: false,
                         is_hoverable: true,
