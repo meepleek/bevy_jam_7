@@ -54,11 +54,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-pub fn spawn_grid(
-    mut cmd: Commands,
-    // mut next_phase: ResMut<NextState<GameplayPhase>>,
-    sprites: Res<Sprites>,
-) {
+pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>) {
     let grid = Grid::new(GRID_SIZE, GRID_SIZE);
     cmd.spawn((
         Name::new("grid"),
@@ -74,6 +70,7 @@ pub fn spawn_grid(
             let tile_tween_scale = Vec2::ZERO.extend(1.);
             b.spawn((
                 Name::new("grid_tile"),
+                TileCoords(tile),
                 Transform::from_translation(tile_pos).with_scale(tile_tween_scale),
                 Sprite {
                     image: sprites.tile_outline.clone(),
@@ -106,13 +103,6 @@ pub fn spawn_grid(
 }
 
 fn spawn_enemies(mut cmd: Commands, grid: Single<&Grid>) {
-    // cmd.spawn((
-    //     Player,
-    //     Movement::default(),
-    //     TileDirection::All,
-    //     TileEntityKind::Player,
-    //     tile_rect(BLUE_400),
-    // ));
     for (x, y) in [(2, 1), (6, 3), (0, 5)] {
         cmd.spawn(chaser_enemy(
             grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.),
@@ -125,7 +115,7 @@ fn spawn_player(mut cmd: Commands, _grid: Single<&Grid>) {
         Player,
         Movement::default(),
         TileDirection::All,
-        TileEntityKind::Player,
+        TileObjectKind::Player,
         tile_rect(BLUE_400),
     ));
 }

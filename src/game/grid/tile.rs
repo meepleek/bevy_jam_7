@@ -6,8 +6,11 @@ use crate::prelude::tween::get_relative_sprite_color_anim;
 use crate::prelude::*;
 
 pub fn plugin(app: &mut App) {
-    app.add_observer(hide_tile_highlighs_on_card_deselected);
+    app.add_observer(hide_tile_highlights_on_card_deselected);
 }
+
+#[derive(Component, Debug, Clone, PartialEq, Deref, DerefMut)]
+pub struct TileCoords(pub Coords);
 
 // use this as a single source of truth for both the movement & ability direction
 // to avoid tricky combos like ortho movement + diag attack that could lead to buggy pathfinding
@@ -20,20 +23,20 @@ pub enum TileDirection {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct TileEntity {
+pub struct TileObject {
     pub entity: Entity,
-    pub kind: TileEntityKind,
+    pub kind: TileObjectKind,
 }
 
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
-pub enum TileEntityKind {
+pub enum TileObjectKind {
     Player,
     Enemy,
     Wall,
 }
 
 #[derive(Component)]
-pub struct TileInteraction;
+pub struct TileHighlighted;
 
 pub struct TileIterator {
     grid_size: U16Vec2,
@@ -65,10 +68,10 @@ impl TileIterator {
     }
 }
 
-fn hide_tile_highlighs_on_card_deselected(
+fn hide_tile_highlights_on_card_deselected(
     _trig: On<Remove, SelectedTileTriggerCard>,
     mut cmd: Commands,
-    interaction_tile_q: Query<Entity, With<TileInteraction>>,
+    interaction_tile_q: Query<Entity, With<TileHighlighted>>,
 ) {
     for e in &interaction_tile_q {
         or_continue!(cmd.get_entity(e)).try_insert((

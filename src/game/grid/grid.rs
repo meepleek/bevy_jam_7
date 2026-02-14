@@ -26,7 +26,7 @@ pub const DIRS: [Coords; 8] = [
 
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, track_grid_position)
-        .add_systems(Last, add_new_tile_entities_to_grid);
+        .add_systems(Last, (add_new_tiles_to_grid, add_new_tile_objects_to_grid));
 }
 
 #[derive(Component)]
@@ -35,8 +35,14 @@ pub struct Grid {
     width: u16,
     heigth: u16,
     center_global_position: Vec2,
-    occupied_tiles: HashMap<Coords, TileEntity>,
+    all_tiles: HashMap<Coords, Entity>,
+    occupied_tiles: HashMap<Coords, TileObject>,
     entities: HashMap<Entity, Coords>,
+}
+
+#[derive(Debug, PartialEq, Eq, derive_more::Error, derive_more::Display)]
+pub enum AddTileError {
+    OutOfBounds,
 }
 
 #[derive(Debug, PartialEq, Eq, derive_more::Error, derive_more::Display)]
@@ -68,6 +74,7 @@ impl Grid {
         Self {
             width,
             heigth,
+            all_tiles: HashMap::with_capacity((width * heigth) as usize),
             occupied_tiles: HashMap::default(),
             entities: HashMap::default(),
             center_global_position: Vec2::ZERO,
@@ -87,18 +94,26 @@ impl Grid {
         self.grid_size().as_vec2() * TILE_SIZE as f32
     }
 
-    pub fn coords_to_tile_entity(&self, coords: Coords) -> Option<TileEntity> {
+    pub fn add_tile(&mut self, tile: Coords, entity: Entity) -> Result<(), AddTileError> {
+        if !self.within_bounds(tile) {
+            return Err(AddTileError::OutOfBounds);
+        }
+
+        self.all_tiles.insert(tile, entity);
+        Ok(())
+    }
+
+    pub fn coords_to_tile_object(&self, coords: Coords) -> Option<TileObject> {
         self.occupied_tiles.get(&coords).cloned()
     }
 
     pub fn contains_agent(&self, coords: Coords) -> bool {
-        self.coords_to_tile_entity(coords)
-            .is_some_and(|tile_entity| {
-                matches!(
-                    tile_entity.kind,
-                    TileEntityKind::Player | TileEntityKind::Enemy
-                )
-            })
+        self.coords_to_tile_object(coords).is_some_and(|tile_obj| {
+            matches!(
+                tile_obj.kind,
+                TileObjectKind::Player | TileObjectKind::Enemy
+            )
+        })
     }
 
     pub fn entity_to_coords(&self, entity: Entity) -> Option<Coords> {
@@ -143,12 +158,12 @@ impl Grid {
 
     pub fn place_entity(
         &mut self,
-        tile_entity: TileEntity,
+        tile_object: TileObject,
         coords: Coords,
     ) -> Result<(), PlaceError> {
         self.can_place_at(coords)?;
-        self.entities.insert(tile_entity.entity, coords);
-        self.occupied_tiles.insert(coords, tile_entity);
+        self.entities.insert(tile_object.entity, coords);
+        self.occupied_tiles.insert(coords, tile_object);
 
         Ok(())
     }
@@ -157,7 +172,7 @@ impl Grid {
         self.can_place_at(coords)?;
         match self.entities.get(&entity) {
             Some(prev_tile) => match self.clear_tile(*prev_tile) {
-                Some(tile_entity) => self.place_entity(tile_entity, coords)?,
+                Some(tile_obj) => self.place_entity(tile_obj, coords)?,
                 None => panic!("Reverse coords lookup failed"),
             },
             None => return Err(MoveError::EntityLookupFailed),
@@ -165,7 +180,7 @@ impl Grid {
         Ok(())
     }
 
-    pub fn clear_tile(&mut self, coords: Coords) -> Option<TileEntity> {
+    pub fn clear_tile(&mut self, coords: Coords) -> Option<TileObject> {
         self.occupied_tiles.remove(&coords)
     }
 
@@ -178,7 +193,7 @@ impl Grid {
         center: Coords,
         allowed_occupied_tiles: Option<Vec<Coords>>,
         effect_target: EffectTarget,
-        allowed_entity_kind: Option<TileEntityKind>,
+        allowed_entity_kind: Option<TileObjectKind>,
     ) -> Vec<Coords> {
         effect_target
             .target_tiles()
@@ -214,7 +229,7 @@ impl Grid {
         &self,
         center: Coords,
         effect_target: EffectTarget,
-        entity_kind: TileEntityKind,
+        entity_kind: TileObjectKind,
     ) -> bool {
         let effect_tiles = self.effect_tiles(center, None, effect_target, Some(entity_kind));
         !effect_tiles.is_empty()
@@ -293,10 +308,10 @@ impl Grid {
                 dbg_map.push_str(&format!("{:2}", tile.y));
             }
             dbg_map.push(match self.occupied_tiles.get(&tile) {
-                Some(TileEntity { kind, .. }) => match kind {
-                    TileEntityKind::Player => '@',
-                    TileEntityKind::Enemy => '!',
-                    TileEntityKind::Wall => '#',
+                Some(TileObject { kind, .. }) => match kind {
+                    TileObjectKind::Player => '@',
+                    TileObjectKind::Enemy => '!',
+                    TileObjectKind::Wall => '#',
                 },
                 None => '.',
             });
@@ -314,14 +329,23 @@ fn track_grid_position(
     }
 }
 
-fn add_new_tile_entities_to_grid(
-    entity_q: Query<(Entity, &TileEntityKind, &GlobalTransform), Added<TileEntityKind>>,
+fn add_new_tiles_to_grid(
+    entity_q: Query<(Entity, &TileCoords), Added<TileCoords>>,
+    mut grid: Single<&mut Grid>,
+) {
+    for (e, tile) in entity_q {
+        grid.add_tile(tile.0, e).expect("invalid tile");
+    }
+}
+
+fn add_new_tile_objects_to_grid(
+    entity_q: Query<(Entity, &TileObjectKind, &GlobalTransform), Added<TileObjectKind>>,
     mut grid: Single<&mut Grid>,
 ) {
     for (e, kind, t) in entity_q {
         let tile = or_return!(grid.world_to_tile(t.translation().truncate()));
         or_return!(grid.place_entity(
-            TileEntity {
+            TileObject {
                 entity: e,
                 kind: *kind,
             },
@@ -336,7 +360,7 @@ mod tests {
     use tracing_test::traced_test;
 
     use super::*;
-    use crate::game::prelude::TileEntityKind;
+    use crate::game::prelude::TileObjectKind;
 
     #[test_case(0., 0., 0., 0. => Some(Coords::ONE))]
     #[test_case(64.,-64., 0., 0. => Some(Coords::ZERO))]
@@ -388,8 +412,8 @@ mod tests {
         let mut board = Grid::new(6, 6);
         board
             .place_entity(
-                TileEntity {
-                    kind: TileEntityKind::Player,
+                TileObject {
+                    kind: TileObjectKind::Player,
                     entity: Entity::PLACEHOLDER,
                 },
                 coords,
@@ -480,9 +504,9 @@ mod tests {
         for tile in [(1, 1), (2, 1), (3, 1)] {
             _ = grid
                 .place_entity(
-                    TileEntity {
+                    TileObject {
                         entity: Entity::PLACEHOLDER,
-                        kind: TileEntityKind::Wall,
+                        kind: TileObjectKind::Wall,
                     },
                     tile.into(),
                 )
@@ -491,9 +515,9 @@ mod tests {
         for tile in [(1, 0), (2, 2), (3, 4)] {
             _ = grid
                 .place_entity(
-                    TileEntity {
+                    TileObject {
                         entity: Entity::PLACEHOLDER,
-                        kind: TileEntityKind::Enemy,
+                        kind: TileObjectKind::Enemy,
                     },
                     tile.into(),
                 )
@@ -501,9 +525,9 @@ mod tests {
         }
         _ = grid
             .place_entity(
-                TileEntity {
+                TileObject {
                     entity: Entity::PLACEHOLDER,
-                    kind: TileEntityKind::Player,
+                    kind: TileObjectKind::Player,
                 },
                 PLAYER_TILE.into(),
             )

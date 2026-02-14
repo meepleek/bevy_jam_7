@@ -119,7 +119,7 @@ fn process_queue(
                                 if grid.effect_tiles_contain_entity_kind(
                                     enemy_tile,
                                     target.clone(),
-                                    TileEntityKind::Player,
+                                    TileObjectKind::Player,
                                 ) {
                                     cmd.trigger(TempChangeAction {
                                         change: *temp_offset,
@@ -172,7 +172,7 @@ pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
         Enemy,
         Movement::default(),
         TileDirection::Orthogonal,
-        TileEntityKind::Enemy,
+        TileObjectKind::Enemy,
         EnemyAbility::Attack {
             target: EffectTarget {
                 reach: EffectReach::Exact(1),

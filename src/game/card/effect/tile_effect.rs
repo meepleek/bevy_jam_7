@@ -174,7 +174,7 @@ fn process_selected_tile_trigger_card(
                     Sprite::from_color(Color::NONE, Vec2::splat(60.)),
                     tween::get_relative_sprite_color_anim(COL_TILE_VALID, 150, None),
                     tween::get_absolute_scale_anim(Vec3::splat(0.5), Vec2::ONE, 180, None),
-                    TileInteraction,
+                    TileHighlighted,
                     Pickable {
                         should_block_lower: false,
                         is_hoverable: true,
