@@ -4,6 +4,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<TurnOrder>()
         .add_sub_state::<PlayerRoundPhase>()
         .add_systems(OnEnter(TurnOrder::Player), fill_hand)
+        .add_systems(OnEnter(TurnOrder::Ai), deselect_tile_card)
         .add_systems(Update, end_turn_on_empty_hand);
 }
 
@@ -87,5 +88,14 @@ fn fill_hand(
                 &sprites,
             ),
         ));
+    }
+}
+
+fn deselect_tile_card(
+    mut cmd: Commands,
+    selected_tile_card_q: Query<Entity, With<SelectedTileTriggerCard>>,
+) {
+    for selected_card_e in &selected_tile_card_q {
+        or_return!(cmd.get_entity(selected_card_e)).try_remove::<SelectedTileTriggerCard>();
     }
 }

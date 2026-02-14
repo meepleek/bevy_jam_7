@@ -77,6 +77,7 @@ pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>) {
                     color: COL_TILE,
                     ..default()
                 },
+                Pickable::default(),
                 Animator::new(tween::delay_tween(
                     tween::get_relative_scale_tween(
                         Vec2::ONE,
@@ -91,6 +92,10 @@ pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>) {
                         image: sprites.tile_inner.clone(),
                         color: COL_TILE,
                         ..default()
+                    },
+                    Pickable {
+                        is_hoverable: true,
+                        should_block_lower: false
                     },
                 )],
             ));

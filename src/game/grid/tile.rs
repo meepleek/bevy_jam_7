@@ -1,12 +1,26 @@
+use bevy::ecs::system::SystemParam;
 use bevy::math::U16Vec2;
 
-use crate::prelude::tween::DespawnOnTweenCompleted;
-use crate::prelude::tween::get_relative_scale_anim;
-use crate::prelude::tween::get_relative_sprite_color_anim;
 use crate::prelude::*;
 
 pub fn plugin(app: &mut App) {
     app.add_observer(hide_tile_highlights_on_card_deselected);
+}
+
+#[derive(SystemParam)]
+pub struct Tiles<'w, 's> {
+    cmd: Commands<'w, 's>,
+    interaction_tile_q: Query<'w, 's, Entity, With<TileHighlighted>>,
+    observers: Observers<'w, 's>,
+}
+impl<'w, 's> Tiles<'w, 's> {
+    pub fn hide_tile_highlights(&mut self) {
+        for e in &self.interaction_tile_q {
+            or_continue!(self.cmd.get_entity(e))
+                .try_insert(tween::get_relative_sprite_color_anim(COL_TILE, 150, None));
+            self.observers.remove_observers_for_watched_entity(e);
+        }
+    }
 }
 
 #[derive(Component, Debug, Clone, PartialEq, Deref, DerefMut)]
@@ -69,17 +83,10 @@ impl TileIterator {
 }
 
 fn hide_tile_highlights_on_card_deselected(
-    _trig: On<Remove, SelectedTileTriggerCard>,
-    mut cmd: Commands,
-    interaction_tile_q: Query<Entity, With<TileHighlighted>>,
+    _ev: On<Remove, SelectedTileTriggerCard>,
+    mut tiles: Tiles,
 ) {
-    for e in &interaction_tile_q {
-        or_continue!(cmd.get_entity(e)).try_insert((
-            get_relative_sprite_color_anim(Color::NONE, 150, None),
-            get_relative_scale_anim(Vec2::splat(0.1), 150, None),
-            DespawnOnTweenCompleted::Itself,
-        ));
-    }
+    tiles.hide_tile_highlights();
 }
 
 #[cfg(test)]

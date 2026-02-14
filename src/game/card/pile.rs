@@ -30,13 +30,14 @@ pub(super) fn plugin(app: &mut App) {
 pub struct Cards<'w, 's> {
     cmd: Commands<'w, 's>,
     card_q: Query<'w, 's, &'static Card>,
-    selected_card_q: Query<'w, 's, Entity, With<SelectedTileTriggerCard>>,
+    selected_tile_card_q: Query<'w, 's, Entity, With<SelectedTileTriggerCard>>,
     discard_pile: Single<'w, 's, &'static mut DiscardPile>,
     #[expect(dead_code)]
     draw_pile: Single<'w, 's, Entity, With<DrawPile>>,
     #[expect(dead_code)]
     hand: Single<'w, 's, Entity, With<CardsInHand>>,
     observers: Observers<'w, 's>,
+    tiles: Tiles<'w, 's>,
 }
 impl<'w, 's> Cards<'w, 's> {
     pub fn discard_card(&mut self, card_e: Entity) {
@@ -53,13 +54,14 @@ impl<'w, 's> Cards<'w, 's> {
         // todo: particles
         self.discard_pile.push(card);
         // deselect any (other) selected tile cards on play of the discarded card
-        for selected_card_e in &self.selected_card_q {
+        for selected_card_e in &self.selected_tile_card_q {
             // don't remove for the discarded card to prevent triggering the observer watching for removal of that component that tweens it back it to place otherwise
             if selected_card_e != card_e {
                 or_return!(self.cmd.get_entity(selected_card_e))
                     .try_remove::<SelectedTileTriggerCard>();
             }
         }
+        self.tiles.hide_tile_highlights();
     }
 }
 

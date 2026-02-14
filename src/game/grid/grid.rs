@@ -35,7 +35,7 @@ pub struct Grid {
     width: u16,
     heigth: u16,
     center_global_position: Vec2,
-    all_tiles: HashMap<Coords, Entity>,
+    tile_entities: HashMap<Coords, Entity>,
     occupied_tiles: HashMap<Coords, TileObject>,
     entities: HashMap<Entity, Coords>,
 }
@@ -74,7 +74,7 @@ impl Grid {
         Self {
             width,
             heigth,
-            all_tiles: HashMap::with_capacity((width * heigth) as usize),
+            tile_entities: HashMap::with_capacity((width * heigth) as usize),
             occupied_tiles: HashMap::default(),
             entities: HashMap::default(),
             center_global_position: Vec2::ZERO,
@@ -94,26 +94,21 @@ impl Grid {
         self.grid_size().as_vec2() * TILE_SIZE as f32
     }
 
-    pub fn add_tile(&mut self, tile: Coords, entity: Entity) -> Result<(), AddTileError> {
+    pub fn add_tile_entity(&mut self, tile: Coords, entity: Entity) -> Result<(), AddTileError> {
         if !self.within_bounds(tile) {
             return Err(AddTileError::OutOfBounds);
         }
 
-        self.all_tiles.insert(tile, entity);
+        self.tile_entities.insert(tile, entity);
         Ok(())
     }
 
-    pub fn coords_to_tile_object(&self, coords: Coords) -> Option<TileObject> {
-        self.occupied_tiles.get(&coords).cloned()
+    pub fn get_tile_entity(&self, tile: Coords) -> Option<Entity> {
+        self.tile_entities.get(&tile).cloned()
     }
 
-    pub fn contains_agent(&self, coords: Coords) -> bool {
-        self.coords_to_tile_object(coords).is_some_and(|tile_obj| {
-            matches!(
-                tile_obj.kind,
-                TileObjectKind::Player | TileObjectKind::Enemy
-            )
-        })
+    pub fn get_tile_object(&self, coords: Coords) -> Option<TileObject> {
+        self.occupied_tiles.get(&coords).cloned()
     }
 
     pub fn entity_to_coords(&self, entity: Entity) -> Option<Coords> {
@@ -334,7 +329,7 @@ fn add_new_tiles_to_grid(
     mut grid: Single<&mut Grid>,
 ) {
     for (e, tile) in entity_q {
-        grid.add_tile(tile.0, e).expect("invalid tile");
+        grid.add_tile_entity(tile.0, e).expect("invalid tile");
     }
 }
 

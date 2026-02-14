@@ -154,44 +154,46 @@ fn process_selected_tile_trigger_card(
     let player_tile = or_return!(grid.entity_to_coords(*player));
     match &card.effect_trigger {
         CardEffectTrigger::TileSelection(action) => {
-            for (tile, position) in action
-                .tiles()
-                .into_iter()
-                .map(|tile| player_tile + tile)
-                .filter_map(|tile| {
-                    if matches!(action.tile_target(), TileTarget::Empty)
-                        || grid.contains_agent(tile)
-                    {
-                        grid.tile_to_world(tile).map(|pos| (tile, pos))
-                    } else {
-                        None
-                    }
-                })
-            {
-                let card_e = trig.event_target();
-                cmd.spawn((
-                    Transform::from_translation(position.extend(0.)),
-                    Sprite::from_color(Color::NONE, Vec2::splat(60.)),
-                    tween::get_relative_sprite_color_anim(COL_TILE_VALID, 150, None),
-                    tween::get_absolute_scale_anim(Vec3::splat(0.5), Vec2::ONE, 180, None),
-                    TileHighlighted,
-                    Pickable {
-                        should_block_lower: false,
-                        is_hoverable: true,
+            let card_e = trig.event_target();
+            let effect_palette = card.effect_trigger.effect_palette();
+            for tile in action.tiles().into_iter().map(|tile| player_tile + tile) {
+                let tile_obj = grid.get_tile_object(tile);
+                let targetable = match action.tile_target() {
+                    TileTarget::Empty => tile_obj.is_none(),
+                    TileTarget::Enemy => match tile_obj {
+                        Some(TileObject {
+                            kind: TileObjectKind::Enemy,
+                            ..
+                        }) => true,
+                        _ => false,
                     },
-                ))
-                .observe(tween::tween_sprite_color_on_trigger::<Pointer<Over>, ()>(
-                    COL_TILE_VALID_HOVER,
-                ))
-                .observe(tween::tween_sprite_color_on_trigger::<Pointer<Out>, ()>(
-                    COL_TILE_VALID,
-                ))
-                .observe(move |_trig: On<Pointer<Click>>, mut cmd: Commands| {
-                    cmd.trigger(PlaySelectedTileCard {
-                        card_e,
-                        selected_tile: tile,
+                };
+                if !targetable {
+                    continue;
+                }
+
+                let tile_e = or_continue!(grid.get_tile_entity(tile));
+                or_continue!(cmd.get_entity(tile_e))
+                    .insert((
+                        tween::get_relative_sprite_color_anim(
+                            effect_palette.highlighted,
+                            150,
+                            None,
+                        ),
+                        TileHighlighted,
+                    ))
+                    .observe(tween::tween_sprite_color_on_trigger::<Pointer<Over>, ()>(
+                        effect_palette.hover,
+                    ))
+                    .observe(tween::tween_sprite_color_on_trigger::<Pointer<Out>, ()>(
+                        effect_palette.highlighted,
+                    ))
+                    .observe(move |_ev: On<Pointer<Click>>, mut cmd: Commands| {
+                        cmd.trigger(PlaySelectedTileCard {
+                            card_e,
+                            selected_tile: tile,
+                        });
                     });
-                });
             }
         }
         CardEffectTrigger::CardSelection(_) => {

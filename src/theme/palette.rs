@@ -66,8 +66,6 @@ pub const COL_CARD_EFFECT_ATTACK_HOVER: Color = COL_RED_LIGHT;
 
 // tiles
 pub const COL_TILE: Color = COL_LIGHT;
-pub const COL_TILE_VALID: Color = COL_GREEN;
-pub const COL_TILE_VALID_HOVER: Color = COL_GREEN_DARK;
 
 #[derive(Debug, Clone, Copy)]
 pub struct CardEffectPalette {
