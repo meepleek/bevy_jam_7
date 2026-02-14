@@ -3,7 +3,7 @@ use bevy_trauma_shake::Shakes;
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_observer(handle_temp_change);
+    app.init_resource::<Temp>().add_observer(handle_temp_change);
 }
 
 #[derive(Resource, Debug)]
@@ -18,6 +18,21 @@ impl Temp {
 
     pub const fn default_initial() -> u8 {
         Self::default_max().div_ceil(2)
+    }
+
+    pub fn ratio(&self) -> f32 {
+        self.current as f32 / self.max as f32
+    }
+
+    pub fn fill_color(&self) -> Color {
+        let third = self.max / 3;
+        if self.current < third {
+            COL_BLUE
+        } else if self.current > third * 2 {
+            COL_RED
+        } else {
+            COL_ORANGE
+        }
     }
 
     /// Updates health saturating it at bounds and returning whether it has overlown

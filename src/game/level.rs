@@ -125,9 +125,9 @@ fn spawn_player(mut cmd: Commands, _grid: Single<&Grid>) {
     ));
 }
 
-fn spawn_ui(mut cmd: Commands, sprites: Res<Sprites>) {
+fn spawn_ui(mut cmd: Commands, sprites: Res<Sprites>, temp: Res<Temp>) {
     // todo: pass in heat
-    cmd.spawn(thermometer(&sprites, Temp::default_max(), 1, COL_YELLOW));
+    cmd.spawn(thermometer(&sprites, &temp, 1, COL_ORANGE));
 }
 
 fn spawn_decks(mut cmd: Commands, mut next_phase: ResMut<NextState<GameplayPhase>>) {

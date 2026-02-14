@@ -17,11 +17,11 @@ struct EndTurnButton;
 
 #[derive(Component)]
 struct TempFill;
-impl TempFill {
-    pub fn perc_val(current: u8, max: u8) -> Val {
-        percent((100. / max as f32) * current as f32)
-    }
-}
+// impl TempFill {
+//     pub fn perc_val(current: u8, max: u8) -> Val {
+//         percent((100. / max as f32) * current as f32)
+//     }
+// }
 
 // pub fn ui_bundle() -> impl Bundle {
 //     (
@@ -70,41 +70,11 @@ impl TempFill {
 //     )
 // }
 
-// fn temp_bar() -> impl Bundle {
-//     (
-//         Node {
-//             flex_basis: percent(100),
-//             align_self: AlignSelf::Stretch,
-//             padding: UiRect::all(px(10)),
-//             grid_row: GridPlacement::span(3),
-//             ..default()
-//         },
-//         BackgroundColor(YELLOW.into()),
-//         children![(
-//             Node {
-//                 align_items: AlignItems::End,
-//                 width: px(50),
-//                 height: percent(100),
-//                 padding: UiRect::all(px(4)),
-//                 ..default()
-//             },
-//             BackgroundColor(Color::BLACK),
-//             children![(
-//                 Node {
-//                     height: TempFill::perc_val(Temp::default_initial(), Temp::default_max()),
-//                     width: percent(100.),
-//                     ..default()
-//                 },
-//                 BackgroundColor(Color::WHITE),
-//                 TempFill,
-//             )]
-//         ),],
-//     )
-// }
-
-pub fn thermometer(sprites: &Sprites, max_temp: u8, heat: u8, color: Color) -> impl Bundle {
+pub fn thermometer(sprites: &Sprites, temp: &Temp, heat: u8, color: Color) -> impl Bundle {
     let notch_handle = sprites.thermo_notch.clone();
     let pos = Vec3::new(-520., 105., 1.);
+    let scale_y = temp.ratio();
+    let max_temp = temp.max;
 
     (
         Name::new("thermostat"),
@@ -126,10 +96,10 @@ pub fn thermometer(sprites: &Sprites, max_temp: u8, heat: u8, color: Color) -> i
                 TempFill,
                 Sprite {
                     color,
-                    custom_size: Some(Vec2::new(60., 450.)),
+                    custom_size: Some(Vec2::new(60., 315.)),
                     ..default()
                 },
-                Transform::from_xyz(0., -120., 0.2).with_scale(Vec3::new(1., 0.7, 1.)),
+                Transform::from_xyz(0., -120., 0.2).with_scale(Vec3::new(1., scale_y, 1.)),
                 Anchor::BOTTOM_CENTER,
             ),
             (
@@ -169,9 +139,9 @@ pub fn thermometer(sprites: &Sprites, max_temp: u8, heat: u8, color: Color) -> i
         ],
         (BundleEffect::new(move |e_cmd| {
             e_cmd.with_children(|b| {
-                let fill_height = 280.;
-                let segment_size = fill_height / max_temp as f32;
-                for i in 0..max_temp {
+                let fill_height = 285.;
+                let segment_size = fill_height / (max_temp - 1) as f32;
+                for i in 1..max_temp {
                     b.spawn((
                         Name::new("thermostat_notch"),
                         Sprite {
@@ -181,7 +151,7 @@ pub fn thermometer(sprites: &Sprites, max_temp: u8, heat: u8, color: Color) -> i
                         },
                         Transform::from_xyz(
                             -15.,
-                            i as f32 * -segment_size + fill_height / 2. + 10.,
+                            i as f32 * -segment_size + fill_height / 2. + 53.,
                             1.,
                         ),
                     ));
@@ -201,6 +171,10 @@ fn disable_end_turn_button(btn: Single<Entity, With<EndTurnButton>>, mut cmd: Co
     or_return!(cmd.get_entity(*btn)).insert(InteractionDisabled);
 }
 
-fn handle_temp_change(temp: Res<Temp>, mut node: Single<&mut Node, With<TempFill>>) {
-    node.height = TempFill::perc_val(temp.current, temp.max);
+fn handle_temp_change(mut cmd: Commands, temp: Res<Temp>, fill_e: Single<Entity, With<TempFill>>) {
+    // node.height = TempFill::perc_val(temp.current, temp.max);
+    or_return!(cmd.get_entity(*fill_e)).try_insert((
+        tween::get_relative_scale_anim(Vec2::new(1., temp.ratio()), 300, None),
+        tween::get_relative_sprite_color_anim(temp.fill_color(), 250, None),
+    ));
 }
