@@ -8,7 +8,7 @@ use crate::prelude::tween::PriorityTween;
 use crate::prelude::*;
 use crate::utils::bundle_effect::BundleEffect;
 
-const FOCUSED_CARD_Y: f32 = -220.;
+const FOCUSED_CARD_Y: f32 = -225.;
 
 pub(super) fn plugin(_app: &mut App) {}
 
@@ -510,5 +510,5 @@ fn card_index_from_slice(entities: &[Entity], entity: Entity) -> usize {
 
 pub fn hand_card_pos(card_index: usize, current_hand_size: usize) -> Vec3 {
     let pos_mult = card_index_mult(card_index, current_hand_size);
-    Vec3::new(pos_mult * 200., -310., pos_mult / 10. + 1.)
+    Vec3::new(pos_mult * 210., -260., pos_mult / 10. + 1.)
 }

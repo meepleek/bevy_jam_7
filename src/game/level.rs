@@ -62,7 +62,7 @@ pub fn spawn_grid(
     let grid = Grid::new(GRID_SIZE, GRID_SIZE);
     cmd.spawn((
         Name::new("grid"),
-        Transform::from_translation(Vec3::NEG_Z),
+        Transform::from_translation(Vec3::Y * 105.),
         Visibility::default(),
     ))
     .with_children(|b| {
