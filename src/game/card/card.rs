@@ -88,7 +88,6 @@ impl Card {
 }
 
 #[derive(EntityEvent)]
-#[entity_event(propagate)]
 pub struct CardPointerOut(Entity);
 
 #[derive(Component, Clone, Copy, PartialEq, Default)]
@@ -97,13 +96,7 @@ pub struct CardFocused;
 #[derive(Component, Clone, Copy, PartialEq, Default)]
 pub struct SelectedTileTriggerCard;
 
-pub fn card(
-    card: Card,
-    hand_i: usize,
-    hand_size: usize,
-    hover_mesh: Handle<Mesh>,
-    sprites: &Sprites,
-) -> impl Bundle {
+pub fn card(card: Card, hand_i: usize, hand_size: usize, sprites: &Sprites) -> impl Bundle {
     let card_outer_handle = sprites.card_bg.clone();
     let card_inner_handle = sprites.card_inner.clone();
     let card_border_handle = sprites.card_border.clone();
@@ -132,6 +125,8 @@ pub fn card(
         BundleEffect::new(move |e_cmd| {
             e_cmd
                 .with_children(|b| {
+                    let parent_e = b.target_entity();
+
                     let border_e = b
                         .spawn((
                             Name::new("card_border"),
@@ -178,17 +173,22 @@ pub fn card(
 
                     b.spawn((
                         Name::new("card_hover_area"),
+                        Sprite {
+                            color: Color::NONE,
+                            custom_size: Some(Vec2::new(230., 570.)),
+                            ..default()
+                        },
                         Transform::from_xyz(0., -120., 0.),
-                        Mesh2d(hover_mesh),
                         Pickable {
                             should_block_lower: false,
                             is_hoverable: true,
                         },
                     ))
-                    .observe(|ev: On<Pointer<Out>>, mut cmd: Commands| {
-                        or_return_quiet!(cmd.get_entity(ev.event_target())).trigger(CardPointerOut);
-                    })
                     .observe(|mut ev: On<Pointer<Over>>| {
+                        ev.propagate(false);
+                    })
+                    .observe(move |mut ev: On<Pointer<Out>>, mut cmd: Commands| {
+                        or_return_quiet!(cmd.get_entity(parent_e)).trigger(CardPointerOut);
                         ev.propagate(false);
                     })
                     .observe(|mut ev: On<Pointer<Click>>| {

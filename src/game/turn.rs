@@ -52,7 +52,6 @@ fn fill_hand(
     hand_size: Single<&HandSize>,
     mut cmd: Commands,
     sprites: Res<Sprites>,
-    picking_meshes: Res<PickingMeshes>,
 ) {
     let (piles_e, mut draw_pile, hand, mut discard_pile) = or_return_quiet!(piles_q.single_mut());
     let current_hand_len = hand.len();
@@ -80,13 +79,7 @@ fn fill_hand(
     for (i, card) in cards_to_draw.into_iter().enumerate() {
         cmd.spawn((
             HandCard(piles_e),
-            card::card(
-                card,
-                current_hand_len + i,
-                hand_size.as_usize(),
-                picking_meshes.card_hover.clone(),
-                &sprites,
-            ),
+            card::card(card, current_hand_len + i, hand_size.as_usize(), &sprites),
         ));
     }
 }

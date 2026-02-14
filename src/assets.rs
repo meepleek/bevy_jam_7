@@ -5,8 +5,7 @@ pub(super) fn plugin(app: &mut App) {
         LoadingState::new(Screen::Splash)
             .continue_to_state(Screen::title())
             .load_collection::<Sprites>(),
-    )
-    .add_systems(Startup, spawn_helper_meshes);
+    );
 }
 
 #[derive(AssetCollection, Resource)]
@@ -33,15 +32,4 @@ pub struct Sprites {
     pub effect_move: Handle<Image>,
     #[asset(path = "images/effect/attack.png")]
     pub effect_attack: Handle<Image>,
-}
-
-#[derive(Resource)]
-pub struct PickingMeshes {
-    pub card_hover: Handle<Mesh>,
-}
-
-fn spawn_helper_meshes(mut cmd: Commands, mut meshes: ResMut<Assets<Mesh>>) {
-    cmd.insert_resource(PickingMeshes {
-        card_hover: meshes.add(Rectangle::new(230., 570.)),
-    });
 }
