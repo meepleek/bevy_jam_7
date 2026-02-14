@@ -36,4 +36,15 @@ pub struct Sprites {
     #[asset(path = "images/bg/mountains.png")]
     #[asset(image(sampler(filter = nearest)))]
     pub bg_mountains: Handle<Image>,
+    // heat
+    #[asset(path = "images/heat/heat_icon.png")]
+    pub heat_icon: Handle<Image>,
+    #[asset(path = "images/heat/thermo_bg.png")]
+    pub thermo_bg: Handle<Image>,
+    #[asset(path = "images/heat/thermo_btm.png")]
+    pub thermo_btm: Handle<Image>,
+    #[asset(path = "images/heat/thermo_notch.png")]
+    pub thermo_notch: Handle<Image>,
+    #[asset(path = "images/heat/thermo_outline.png")]
+    pub thermo_outline: Handle<Image>,
 }

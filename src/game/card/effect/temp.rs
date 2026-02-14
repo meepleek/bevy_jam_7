@@ -13,7 +13,7 @@ pub struct Temp {
 }
 impl Temp {
     pub const fn default_max() -> u8 {
-        5
+        10
     }
 
     pub const fn default_initial() -> u8 {
