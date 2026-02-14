@@ -1,11 +1,11 @@
 use bevy::{color::palettes::tailwind::BLUE_400, time::common_conditions::once_after_delay};
 use bevy_tweening::Animator;
 
-use crate::{game::ui::thermostat, prelude::*};
+use crate::{game::ui::thermometer, prelude::*};
 
 const GRID_SIZE: u16 = 7;
-const TILE_TWEEN_DURATION_MS: u64 = 280;
-const TILE_TWEEN_STAGGER_MS: u64 = 60;
+const TILE_TWEEN_DURATION_MS: u64 = 220;
+const TILE_TWEEN_STAGGER_MS: u64 = 40;
 
 pub(super) fn plugin(app: &mut App) {
     let initial_delay_ms = 400;
@@ -127,7 +127,7 @@ fn spawn_player(mut cmd: Commands, _grid: Single<&Grid>) {
 
 fn spawn_ui(mut cmd: Commands, sprites: Res<Sprites>) {
     // todo: pass in heat
-    cmd.spawn(thermostat(&sprites, Temp::default_max(), 1, COL_YELLOW));
+    cmd.spawn(thermometer(&sprites, Temp::default_max(), 1, COL_YELLOW));
 }
 
 fn spawn_decks(mut cmd: Commands, mut next_phase: ResMut<NextState<GameplayPhase>>) {

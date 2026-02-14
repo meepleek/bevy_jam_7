@@ -102,12 +102,14 @@ impl TempFill {
 //     )
 // }
 
-pub fn thermostat(sprites: &Sprites, max_temp: u8, heat: u8, color: Color) -> impl Bundle {
+pub fn thermometer(sprites: &Sprites, max_temp: u8, heat: u8, color: Color) -> impl Bundle {
     let notch_handle = sprites.thermo_notch.clone();
+    let pos = Vec3::new(-520., 105., 1.);
+
     (
         Name::new("thermostat"),
         Sprite::from_image(sprites.thermo_bg.clone()),
-        Transform::from_xyz(-520., 105., 1.),
+        Transform::from_translation(pos.with_x(-800.)),
         children![
             (
                 Name::new("thermostat_bg"),
@@ -186,6 +188,7 @@ pub fn thermostat(sprites: &Sprites, max_temp: u8, heat: u8, color: Color) -> im
                 }
             });
         })),
+        tween::get_relative_translation_anim(pos.truncate(), 400, Some(EaseFunction::BackOut)),
     )
 }
 
