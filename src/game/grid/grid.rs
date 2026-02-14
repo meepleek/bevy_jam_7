@@ -271,7 +271,6 @@ impl Grid {
         .and_then(|path| (!path.is_empty()).then_some(path))
     }
 
-    #[allow(dead_code)]
     pub fn iter_tiles(&self) -> TileIterator {
         TileIterator::from_size((self.width, self.heigth))
     }

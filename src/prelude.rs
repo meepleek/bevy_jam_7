@@ -6,7 +6,6 @@ pub use core::marker::PhantomData;
 pub use core::time::Duration;
 
 pub use bevy::audio::Volume;
-pub use bevy::color::palettes::tailwind::*;
 pub use bevy::diagnostic::FrameCount;
 pub use bevy::ecs::entity_disabling::Disabled;
 pub use bevy::ecs::spawn::SpawnIter;

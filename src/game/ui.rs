@@ -3,8 +3,7 @@ use bevy::{color::palettes::css::YELLOW, ui::InteractionDisabled};
 use crate::{game::turn::TurnOrder, input::menu::ButtonClick, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(GameplayPhase::LevelSpawn), spawn_ui)
-        .add_systems(OnEnter(TurnOrder::Ai), disable_end_turn_button)
+    app.add_systems(OnEnter(TurnOrder::Ai), disable_end_turn_button)
         .add_systems(
             Update,
             handle_temp_change.run_if(resource_exists_and_changed::<Temp>),
@@ -22,7 +21,7 @@ impl TempFill {
     }
 }
 
-fn ui() -> impl Bundle {
+pub fn ui_bundle() -> impl Bundle {
     (
         Name::new("UI Grid"),
         Pickable::IGNORE,
@@ -99,10 +98,6 @@ fn temp_bar() -> impl Bundle {
             )]
         ),],
     )
-}
-
-fn spawn_ui(mut cmd: Commands) {
-    cmd.spawn(ui());
 }
 
 fn end_turn(_ev: On<ButtonClick>, mut turn: ResMut<NextState<TurnOrder>>) {
