@@ -36,6 +36,7 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
 
 ### Other dumb jokes
 
+- dream: I was back at school & the teacher said that my writing lacked cohesion
 - game is gonna be played on a Ratbook Pro
 - the splash of the game should show Jan's rat bevy logo (Made with Mischief ?)
 - loading screen lists dumb stuff like
