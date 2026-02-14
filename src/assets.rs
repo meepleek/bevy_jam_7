@@ -32,4 +32,8 @@ pub struct Sprites {
     pub effect_move: Handle<Image>,
     #[asset(path = "images/effect/attack.png")]
     pub effect_attack: Handle<Image>,
+    // bg
+    #[asset(path = "images/bg/mountains.png")]
+    #[asset(image(sampler(filter = nearest)))]
+    pub bg_mountains: Handle<Image>,
 }

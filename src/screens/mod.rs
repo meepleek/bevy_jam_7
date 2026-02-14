@@ -1,10 +1,11 @@
+mod bg;
 mod splash;
 
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_state::<Screen>();
-    app.add_plugins(splash::plugin);
+    app.add_plugins((splash::plugin, bg::plugin));
 }
 
 #[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
