@@ -3,15 +3,16 @@ use bevy_tweening::Animator;
 use std::collections::VecDeque;
 
 use crate::{game::turn::TurnOrder, prelude::*};
+use spawn::Enemies;
+
+mod spawn;
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_resource::<Enemies>()
-        .init_resource::<EnemyActionQueue>()
+    app.add_plugins(spawn::plugin);
+    app.init_resource::<EnemyActionQueue>()
         .add_systems(OnEnter(TurnOrder::Ai), queue_actions)
         .add_systems(Update, process_queue.run_if(in_state(TurnOrder::Ai)))
-        .add_systems(Update, animate_enemies)
-        .add_observer(on_enemy_added)
-        .add_observer(on_enemy_removed);
+        .add_systems(Update, animate_enemies);
 }
 
 #[derive(Component)]
@@ -61,9 +62,6 @@ impl EnemyAbility {
     }
 }
 
-#[derive(Resource, Deref, DerefMut, Debug, Default)]
-pub struct Enemies(Vec<Entity>);
-
 #[derive(Debug, Clone, Copy)]
 pub struct EnemyAction {
     kind: EnemyActionKind,
@@ -79,16 +77,6 @@ pub enum EnemyActionKind {
 
 #[derive(Resource, Debug, Deref, DerefMut, Default)]
 pub struct EnemyActionQueue(VecDeque<EnemyAction>);
-
-fn on_enemy_added(ev: On<Add, Enemy>, mut enemies: ResMut<Enemies>) {
-    enemies.push(ev.entity);
-}
-
-fn on_enemy_removed(ev: On<Remove, Enemy>, mut enemies: ResMut<Enemies>) {
-    if let Some(i) = enemies.iter().position(|e| *e == ev.entity) {
-        enemies.remove(i);
-    }
-}
 
 fn queue_actions(
     enemies: Res<Enemies>,
