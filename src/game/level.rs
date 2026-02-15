@@ -120,13 +120,20 @@ fn spawn_enemies(mut cmd: Commands, grid: Single<&Grid>, sprites: Res<Sprites>) 
     }
 }
 
-fn spawn_player(mut cmd: Commands, _grid: Single<&Grid>) {
+fn spawn_player(mut cmd: Commands, grid: Single<&Grid>) {
     cmd.spawn((
         Player,
         Movement::default(),
+        Transform::from_translation(
+            grid.tile_to_world((grid.grid_size() / 2).as_i16vec2())
+                .expect("central tile")
+                .extend(1.),
+        )
+        .with_scale(Vec2::ZERO.extend(1.)),
         TileDirection::All,
         TileObjectKind::Player,
         tile_rect(BLUE_400),
+        tween::get_relative_scale_anim(Vec2::ONE, 300, Some(EaseFunction::BackOut)),
     ));
 }
 
