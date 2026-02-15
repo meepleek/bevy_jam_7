@@ -21,3 +21,7 @@ impl<'w, 's, TComponent: Component> Hiearchy<'w, 's, TComponent> {
         None
     }
 }
+
+pub fn reinit_resource<TRes: Resource + Default>(mut cmd: Commands) {
+    cmd.insert_resource(TRes::default());
+}

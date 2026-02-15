@@ -2,7 +2,10 @@ use bevy::{color::palettes::tailwind::BLUE_400, time::common_conditions::once_af
 use bevy_tweening::Animator;
 
 use crate::{
-    game::ui::{end_turn_btn, thermometer},
+    game::{
+        heat::Heat,
+        ui::{end_turn_btn, thermometer},
+    },
     prelude::*,
 };
 
@@ -57,8 +60,9 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>) {
-    let grid = Grid::new(GRID_SIZE, GRID_SIZE);
+pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>, heat: Res<Heat>) {
+    let grid_size = heat.grid_size();
+    let grid = Grid::new(grid_size.x, grid_size.y);
     cmd.spawn((
         Name::new("grid"),
         Transform::from_translation(Vec3::Y * 105.),

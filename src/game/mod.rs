@@ -5,6 +5,7 @@ use crate::game::pause::Gameplay;
 mod card;
 mod enemy;
 mod grid;
+mod heat;
 mod level;
 mod movement;
 mod pause;
@@ -33,6 +34,7 @@ pub mod prelude {
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         level::plugin,
+        heat::plugin,
         movement::plugin,
         pause::plugin,
         player::plugin,
