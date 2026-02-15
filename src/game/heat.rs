@@ -14,13 +14,12 @@ impl Default for Heat {
     }
 }
 impl Heat {
-    pub fn enemy_target(&self) -> usize {
+    pub fn target_kill_count(&self) -> usize {
         let base = 3;
         let increase = 2;
         base + self.0 as usize * increase
     }
 
-    #[expect(dead_code)]
     pub fn enemy_max(&self) -> usize {
         let base = 4;
         base + self.0 as usize / 2
@@ -44,5 +43,16 @@ impl Heat {
     #[expect(dead_code)]
     pub fn temp_increase(&self) -> u8 {
         self.0.max(3)
+    }
+
+    #[expect(dead_code)]
+    pub fn payout(&self) -> usize {
+        match self.0 {
+            ..=1 => 2,
+            2 => 3,
+            3 => 5,
+            4 => 8,
+            _ => 12,
+        }
     }
 }

@@ -86,6 +86,10 @@ impl Grid {
         self.center_global_position
     }
 
+    pub fn start_player_tile(&self) -> Coords {
+        (self.grid_size() / 2).as_i16vec2()
+    }
+
     pub fn grid_size(&self) -> U16Vec2 {
         (self.width, self.heigth).into()
     }
@@ -220,7 +224,7 @@ impl Grid {
         self.effect_tiles(center, Some(vec![start_tile]), effect_target, None)
     }
 
-    pub fn effect_tiles_contain_entity_kind(
+    pub fn effect_tiles_contain_object_kind(
         &self,
         center: Coords,
         effect_target: EffectTarget,

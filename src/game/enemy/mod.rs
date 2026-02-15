@@ -127,7 +127,7 @@ fn process_queue(
                                 target,
                                 temp_offset,
                             } => {
-                                if grid.effect_tiles_contain_entity_kind(
+                                if grid.effect_tiles_contain_object_kind(
                                     enemy_tile,
                                     target.clone(),
                                     TileObjectKind::Player,
@@ -201,14 +201,62 @@ fn animate_enemies(
     }
 }
 
-pub fn chaser_enemy(sprites: &Sprites, pos: Vec3, i: usize) -> impl Bundle {
+pub fn random_enemy(
+    sprites: &Sprites,
+    grid: &Grid,
+    extra_invalid_cords: &[Coords],
+    player_tile: Coords,
+    spawn_i: usize,
+) -> Option<(Coords, impl Bundle)> {
+    let mut rng = rng();
+    let mut extra_invalid_cords: HashSet<_> = extra_invalid_cords.iter().copied().collect();
+    let player_blocked_tiles = EffectTarget {
+        reach: EffectReach::Range(1),
+        direction: EffectDirection::Area,
+    }
+    .target_tiles()
+    .into_iter()
+    .map(|t| t + player_tile);
+    extra_invalid_cords.extend(player_blocked_tiles);
+    let tile = grid
+        .iter_tiles()
+        .filter(|tile| !extra_invalid_cords.contains(tile) && grid.get_tile_object(*tile).is_none())
+        .choose(&mut rng);
+    let Some(tile) = tile else {
+        return None;
+    };
+    let dir = if rng.random_bool(0.5) {
+        TileDirection::Orthogonal
+    } else {
+        TileDirection::Diagonal
+    };
+    let pos = grid.tile_to_world(tile).expect("sampled from valid tiles");
+
+    Some((tile, chaser_enemy(sprites, pos.extend(1.), spawn_i, dir)))
+}
+
+// enum SpawnableEnemy {
+//     Chaser,
+//     Chaser,
+//     // LobberDiag,
+//     // LobberOrtho,
+//     // RangerOrtho,
+//     // RangerDiag,
+//     // Lobber???
+//     // JunkerDiag,
+//     // JunkerOrtho,
+//     // Explosive,
+//     // Shield,
+// }
+
+pub fn chaser_enemy(sprites: &Sprites, pos: Vec3, i: usize, dir: TileDirection) -> impl Bundle {
     (
         Movement::default(),
-        TileDirection::Orthogonal,
+        dir.clone(),
         EnemyAbility::Attack {
             target: EffectTarget {
                 reach: EffectReach::Exact(1),
-                direction: EffectDirection::Area,
+                direction: dir.into(),
             },
             temp_offset: 2,
         },

@@ -36,6 +36,16 @@ pub enum TileDirection {
     All,
 }
 
+impl From<TileDirection> for EffectDirection {
+    fn from(value: TileDirection) -> Self {
+        match value {
+            TileDirection::All => EffectDirection::Area,
+            TileDirection::Orthogonal => EffectDirection::Orthogonal,
+            TileDirection::Diagonal => EffectDirection::Diagonal,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TileObject {
     pub entity: Entity,

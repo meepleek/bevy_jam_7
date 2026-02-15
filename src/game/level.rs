@@ -9,14 +9,15 @@ use crate::{
     prelude::*,
 };
 
-const GRID_SIZE: u16 = 7;
 const TILE_TWEEN_DURATION_MS: u64 = 220;
 const TILE_TWEEN_STAGGER_MS: u64 = 40;
 
 pub(super) fn plugin(app: &mut App) {
     let initial_delay_ms = 400;
+    // todo: handle these delays programatically for each stage instead
+    let max_grid_size = 7;
     let grid_tweening_ms =
-        (GRID_SIZE * GRID_SIZE) as u64 * TILE_TWEEN_STAGGER_MS + TILE_TWEEN_DURATION_MS;
+        (max_grid_size * max_grid_size) as u64 * TILE_TWEEN_STAGGER_MS + TILE_TWEEN_DURATION_MS;
     let grid_delay = initial_delay_ms;
     let ui_delay = initial_delay_ms + grid_tweening_ms / 2; // start mid grid tweening
     let enemies_delay = grid_delay + grid_tweening_ms + 200;
@@ -109,21 +110,18 @@ pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>, heat: Res<Heat>) {
         }
     })
     .insert(grid);
-
-    // todo: after tweening
-    // next_phase.set(LevelSpawnPhase::Enemies);
 }
 
-fn spawn_enemies(mut cmd: Commands, grid: Single<&Grid>, sprites: Res<Sprites>) {
-    for (i, (x, y)) in [(0, 0), (1, 0), (2, 0), (6, 3), (0, 5)]
-        .into_iter()
-        .enumerate()
-    {
-        cmd.spawn(chaser_enemy(
-            &sprites,
-            grid.tile_to_world(Coords::new(x, y)).unwrap().extend(1.),
-            i,
-        ));
+fn spawn_enemies(mut cmd: Commands, grid: Single<&Grid>, sprites: Res<Sprites>, heat: Res<Heat>) {
+    let enemy_count = heat.enemy_max();
+    let mut taken_tiles = Vec::with_capacity(enemy_count);
+    for i in 0..enemy_count {
+        let (tile, enemy) =
+            random_enemy(&sprites, &grid, &taken_tiles, grid.start_player_tile(), i)
+                .expect("something has gone wrong with '''lvl gen'''");
+
+        taken_tiles.push(tile);
+        cmd.spawn(enemy);
     }
 }
 
@@ -132,7 +130,7 @@ fn spawn_player(mut cmd: Commands, grid: Single<&Grid>) {
         Player,
         Movement::default(),
         Transform::from_translation(
-            grid.tile_to_world((grid.grid_size() / 2).as_i16vec2())
+            grid.tile_to_world(grid.start_player_tile())
                 .expect("central tile")
                 .extend(1.),
         )
