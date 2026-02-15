@@ -47,4 +47,13 @@ pub struct Sprites {
     pub thermo_notch: Handle<Image>,
     #[asset(path = "images/heat/thermo_outline.png")]
     pub thermo_outline: Handle<Image>,
+    // enemy
+    #[asset(texture_atlas_layout(tile_size_x = 79, tile_size_y = 79, columns = 23, rows = 1))]
+    pub enemy_atlas_layout: Handle<TextureAtlasLayout>,
+    #[asset(path = "images/enemy/spritesheet.png")]
+    pub enemy_sheet: Handle<Image>,
+    #[asset(texture_atlas_layout(tile_size_x = 79, tile_size_y = 79, columns = 8, rows = 1))]
+    pub faces_atlas_layout: Handle<TextureAtlasLayout>,
+    #[asset(path = "images/enemy/faces.png")]
+    pub faces_sheet: Handle<Image>,
 }

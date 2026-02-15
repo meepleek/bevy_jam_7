@@ -49,6 +49,9 @@ I actually dunno what a design doc is supposed to look like, this's just a bunch
     - "You (were) dried"
     - "You (were) frozen-dried"
 
+## Name ideas
+
+- Rapid Anomaly Termination Squad (RATS)
     
 ## Vibe to go for
 

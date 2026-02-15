@@ -107,10 +107,15 @@ pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>) {
     // next_phase.set(LevelSpawnPhase::Enemies);
 }
 
-fn spawn_enemies(mut cmd: Commands, grid: Single<&Grid>) {
-    for (x, y) in [(2, 1), (6, 3), (0, 5)] {
+fn spawn_enemies(mut cmd: Commands, grid: Single<&Grid>, sprites: Res<Sprites>) {
+    for (i, (x, y)) in [(0, 0), (1, 0), (2, 0), (6, 3), (0, 5)]
+        .into_iter()
+        .enumerate()
+    {
         cmd.spawn(chaser_enemy(
-            grid.tile_to_world(Coords::new(x, y)).unwrap().extend(0.),
+            &sprites,
+            grid.tile_to_world(Coords::new(x, y)).unwrap().extend(1.),
+            i,
         ));
     }
 }

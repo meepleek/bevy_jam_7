@@ -1,5 +1,5 @@
-use bevy::color::palettes::css::CRIMSON;
 use bevy_trauma_shake::Shakes;
+use bevy_tweening::Animator;
 use std::collections::VecDeque;
 
 use crate::{game::turn::TurnOrder, prelude::*};
@@ -9,12 +9,35 @@ pub(super) fn plugin(app: &mut App) {
         .init_resource::<EnemyActionQueue>()
         .add_systems(OnEnter(TurnOrder::Ai), queue_actions)
         .add_systems(Update, process_queue.run_if(in_state(TurnOrder::Ai)))
+        .add_systems(Update, animate_enemies)
         .add_observer(on_enemy_added)
         .add_observer(on_enemy_removed);
 }
 
 #[derive(Component)]
 pub struct Enemy;
+impl Enemy {
+    fn colors() -> &'static [Color] {
+        &[COL_RED_LIGHT, COL_RED, COL_PINK]
+    }
+}
+
+#[derive(Component)]
+struct EnemyAnimationTimer(Timer);
+
+#[derive(Component)]
+struct EnemyRandomizeColor;
+
+#[derive(Component)]
+pub struct AnimationIndeces {
+    start: usize,
+    end: usize,
+}
+impl AnimationIndeces {
+    pub fn range(&self) -> std::ops::RangeInclusive<usize> {
+        self.start..=self.end
+    }
+}
 
 #[derive(Component, Debug, Clone)]
 pub enum EnemyAbility {
@@ -167,12 +190,33 @@ fn process_queue(
     }
 }
 
-pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
+fn animate_enemies(
+    time: Res<Time>,
+    mut query: Query<(
+        &mut EnemyAnimationTimer,
+        Has<EnemyRandomizeColor>,
+        &AnimationIndeces,
+        &mut Sprite,
+    )>,
+) {
+    let mut rng = rng();
+    for (mut timer, randomize_col, indeces, mut sprite) in &mut query {
+        timer.0.tick(time.delta());
+        if timer.0.is_finished() {
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                atlas.index = rng.random_range(indeces.range());
+            }
+            if randomize_col {
+                sprite.color = *Enemy::colors().choose(&mut rng).expect("picked a color");
+            }
+        }
+    }
+}
+
+pub fn chaser_enemy(sprites: &Sprites, pos: Vec3, i: usize) -> impl Bundle {
     (
-        Enemy,
         Movement::default(),
         TileDirection::Orthogonal,
-        TileObjectKind::Enemy,
         EnemyAbility::Attack {
             target: EffectTarget {
                 reach: EffectReach::Exact(1),
@@ -180,7 +224,67 @@ pub fn chaser_enemy(pos: Vec3) -> impl Bundle {
             },
             temp_offset: 2,
         },
-        tile_rect(CRIMSON),
-        Transform::from_translation(pos),
+        enemy_base(sprites, pos, i),
+    )
+}
+
+fn enemy_base(sprites: &Sprites, pos: Vec3, i: usize) -> impl Bundle {
+    let mut rng = rng();
+    let duration_sec: f32 = 0.4;
+    let elapsed = Duration::from_secs_f32(rng.random_range(0.0..duration_sec));
+    let body_indeces = AnimationIndeces { start: 0, end: 22 };
+    let mut body_timer =
+        EnemyAnimationTimer(Timer::from_seconds(duration_sec, TimerMode::Repeating));
+    body_timer.0.set_elapsed(elapsed);
+    let body_start_index = rng.random_range(body_indeces.range());
+
+    let face_indeces = AnimationIndeces { start: 0, end: 6 };
+    let mut face_timer = EnemyAnimationTimer(Timer::from_seconds(
+        duration_sec / 1.5, // this will make the faces out of sync with the body to make the enemies look jankier
+        TimerMode::Repeating,
+    ));
+    face_timer.0.set_elapsed(elapsed);
+    let face_start_index = rng.random_range(face_indeces.range());
+
+    (
+        Enemy,
+        TileObjectKind::Enemy,
+        Transform::from_translation(pos).with_scale(Vec2::ZERO.extend(1.)),
+        Visibility::default(),
+        Animator::new(tween::delay_tween(
+            tween::get_relative_scale_tween(Vec2::ONE, 300, Some(EaseFunction::BackOut)),
+            80 * i as u64,
+        )),
+        children![(
+            Sprite {
+                image: sprites.enemy_sheet.clone(),
+                color: *Enemy::colors()
+                    .choose(&mut rng)
+                    .expect("picked an enemy color"),
+                texture_atlas: Some(TextureAtlas {
+                    layout: sprites.enemy_atlas_layout.clone(),
+                    index: body_start_index,
+                }),
+                ..default()
+            },
+            Transform::from_xyz(-8., 0., 0.1),
+            body_timer,
+            body_indeces,
+            EnemyRandomizeColor,
+            children![(
+                Sprite {
+                    image: sprites.faces_sheet.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: sprites.faces_atlas_layout.clone(),
+                        index: face_start_index,
+                    }),
+                    ..default()
+                },
+                Transform::from_scale(Vec2::splat(0.75).extend(1.))
+                    .with_translation(Vec3::new(3., 3., 0.2)),
+                face_timer,
+                face_indeces,
+            )]
+        ),],
     )
 }
