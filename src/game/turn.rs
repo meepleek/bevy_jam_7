@@ -3,7 +3,10 @@ use crate::{game::card, prelude::*};
 pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<TurnOrder>()
         .add_sub_state::<PlayerRoundPhase>()
-        .add_systems(OnEnter(TurnOrder::Player), fill_hand)
+        .add_systems(
+            OnEnter(TurnOrder::Player),
+            (fill_hand, show_cards_on_player_turn),
+        )
         .add_systems(OnEnter(TurnOrder::Ai), deselect_tile_card)
         .add_systems(Update, end_turn_on_empty_hand);
 }
@@ -82,6 +85,10 @@ fn fill_hand(
             card::card(card, current_hand_len + i, hand_size.as_usize(), &sprites),
         ));
     }
+}
+
+fn show_cards_on_player_turn(mut cards: Cards) {
+    cards.show_cards();
 }
 
 fn deselect_tile_card(

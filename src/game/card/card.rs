@@ -8,6 +8,8 @@ use crate::prelude::tween::PriorityTween;
 use crate::prelude::*;
 use crate::utils::bundle_effect::BundleEffect;
 
+pub const HIDDEN_CARD_Y_OFFSET: f32 = -250.;
+pub const CARD_Y: f32 = -260.;
 const FOCUSED_CARD_Y: f32 = -225.;
 
 pub(super) fn plugin(_app: &mut App) {}
@@ -107,7 +109,7 @@ pub fn card(card: Card, hand_i: usize, hand_size: usize, sprites: &Sprites) -> i
     let discard_effect_handle = card.discard_effect_icon(&sprites);
     let trigger_effect_handle = card.trigger_effect_icon(&sprites);
 
-    let pos = hand_card_pos(hand_i, hand_size) + Vec3::Y * -200.;
+    let pos = hand_card_pos(hand_i, hand_size) + Vec3::Y * HIDDEN_CARD_Y_OFFSET;
 
     (
         Name::new("card_outline"),
@@ -510,5 +512,5 @@ fn card_index_from_slice(entities: &[Entity], entity: Entity) -> usize {
 
 pub fn hand_card_pos(card_index: usize, current_hand_size: usize) -> Vec3 {
     let pos_mult = card_index_mult(card_index, current_hand_size);
-    Vec3::new(pos_mult * 210., -260., pos_mult / 10. + 1.)
+    Vec3::new(pos_mult * 210., CARD_Y, pos_mult / 10. + 1.)
 }

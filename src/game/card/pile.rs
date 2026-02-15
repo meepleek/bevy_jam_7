@@ -34,8 +34,7 @@ pub struct Cards<'w, 's> {
     discard_pile: Single<'w, 's, &'static mut DiscardPile>,
     #[expect(dead_code)]
     draw_pile: Single<'w, 's, Entity, With<DrawPile>>,
-    #[expect(dead_code)]
-    hand: Single<'w, 's, Entity, With<CardsInHand>>,
+    hand: Single<'w, 's, &'static CardsInHand>,
     observers: Observers<'w, 's>,
     tiles: Tiles<'w, 's>,
 }
@@ -63,6 +62,32 @@ impl<'w, 's> Cards<'w, 's> {
         }
         self.tiles.hide_tile_highlights();
     }
+
+    pub fn show_cards(&mut self) {
+        self.tween_cards_position(0.);
+    }
+
+    pub fn hide_cards(&mut self) {
+        self.tween_cards_position(HIDDEN_CARD_Y_OFFSET);
+    }
+
+    fn tween_cards_position(&mut self, card_y_offset: f32) {
+        let anim_dur_ms = 200;
+        if self.hand.is_empty() {
+            return;
+        }
+
+        for (i, e) in self.hand.entities().iter().enumerate() {
+            let mut pos = hand_card_pos(i, self.hand.len());
+            pos.y += card_y_offset;
+            or_return_quiet!(self.cmd.get_entity(*e)).insert(bevy_tweening::Animator::new(
+                tween::delay_tween(
+                    tween::get_relative_translation_tween(pos.truncate(), anim_dur_ms, None),
+                    i as u64 * 70,
+                ),
+            ));
+        }
+    }
 }
 
 #[derive(Component, Default)]
@@ -85,20 +110,10 @@ impl Default for HandSize {
     }
 }
 
-fn reposition_hand_cards(piles_q: Query<&CardsInHand, Changed<CardsInHand>>, mut cmd: Commands) {
-    let hand = or_return_quiet!(piles_q.single());
-    if !hand.is_empty() {
+fn reposition_hand_cards(piles_q: Query<(), Changed<CardsInHand>>, mut cards: Cards) {
+    if !piles_q.is_empty() {
         // hand cards have changed => just tween their positions
-        let anim_dur_ms = 200;
-        for (i, e) in hand.entities().iter().enumerate() {
-            let pos = hand_card_pos(i, hand.len());
-            or_return_quiet!(cmd.get_entity(*e)).insert(bevy_tweening::Animator::new(
-                tween::delay_tween(
-                    tween::get_relative_translation_tween(pos.truncate(), anim_dur_ms, None),
-                    i as u64 * 70,
-                ),
-            ));
-        }
+        cards.show_cards();
     }
 }
 

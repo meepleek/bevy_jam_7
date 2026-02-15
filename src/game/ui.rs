@@ -121,6 +121,7 @@ fn handle_temp_change(mut cmd: Commands, temp: Res<Temp>, fill_e: Single<Entity,
 pub struct GameButtonPalette {
     pub idle: Color,
     pub click: Color,
+    #[expect(dead_code)]
     pub border: Color,
     pub hover: Color,
 }
@@ -155,23 +156,6 @@ fn disable_end_turn_button(btn: Single<Entity, With<EndTurnButton>>, mut cmd: Co
     // todo: actually properly disable the button
     or_return!(cmd.get_entity(*btn)).insert(InteractionDisabled);
 }
-
-// cmd.spawn((
-//     HotRespawn::OnKeypress,
-//     next_turn_btn(
-//         &sprites,
-//         Vec2::new(200., 100.),
-//         1_000,
-//         COL_BLUE,
-//         COL_SNOW,
-//         COL_YELLOW,
-//         COL_ORANGE,
-//         icon,
-//     ),
-// ))
-// .observe(|_ev: On<GameButtonFired>| {
-//     tracing::warn!("btn fired!");
-// });
 
 pub fn end_turn_btn(sprites: &Sprites) -> impl Bundle {
     let position = Vec3::new(450., 110., 1.);
@@ -252,6 +236,8 @@ where
                 .observe(tween::tween_sprite_color_on_trigger::<Pointer<Over>, ()>(
                     palette.hover,
                 ))
+                .observe(handle_next_turn_pointer_hover)
+                .observe(handle_next_turn_pointer_out)
                 .observe(tween::tween_sprite_color_on_trigger::<Pointer<Out>, ()>(
                     palette.idle,
                 ))
@@ -379,5 +365,25 @@ fn tick_btns(
             sprite.color = palette.idle;
             or_return!(cmd.get_entity(e)).trigger(GameButtonFired);
         }
+    }
+}
+
+fn handle_next_turn_pointer_hover(
+    _ev: On<Pointer<Over>>,
+    mut cards: Cards,
+    turn_order: Res<State<TurnOrder>>,
+) {
+    if *turn_order.get() == TurnOrder::Player {
+        cards.hide_cards();
+    }
+}
+
+fn handle_next_turn_pointer_out(
+    _ev: On<Pointer<Out>>,
+    mut cards: Cards,
+    turn_order: Res<State<TurnOrder>>,
+) {
+    if *turn_order.get() == TurnOrder::Player {
+        cards.show_cards();
     }
 }
