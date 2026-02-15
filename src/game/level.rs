@@ -1,7 +1,10 @@
 use bevy::{color::palettes::tailwind::BLUE_400, time::common_conditions::once_after_delay};
 use bevy_tweening::Animator;
 
-use crate::{game::ui::thermometer, prelude::*};
+use crate::{
+    game::ui::{end_turn_btn, thermometer},
+    prelude::*,
+};
 
 const GRID_SIZE: u16 = 7;
 const TILE_TWEEN_DURATION_MS: u64 = 220;
@@ -140,6 +143,7 @@ fn spawn_player(mut cmd: Commands, grid: Single<&Grid>) {
 fn spawn_ui(mut cmd: Commands, sprites: Res<Sprites>, temp: Res<Temp>) {
     // todo: pass in heat
     cmd.spawn(thermometer(&sprites, &temp, 1, COL_ORANGE));
+    cmd.spawn(end_turn_btn(&sprites));
 }
 
 fn spawn_decks(mut cmd: Commands, mut next_phase: ResMut<NextState<GameplayPhase>>) {

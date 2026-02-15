@@ -56,4 +56,11 @@ pub struct Sprites {
     pub faces_atlas_layout: Handle<TextureAtlasLayout>,
     #[asset(path = "images/enemy/faces.png")]
     pub faces_sheet: Handle<Image>,
+    // UI
+    #[asset(path = "images/ui/btn_inner_9slice.png")]
+    pub btn_inner_9slice: Handle<Image>,
+    #[asset(path = "images/ui/btn_outline_9slice.png")]
+    pub btn_outline_9slice: Handle<Image>,
+    #[asset(path = "images/ui/end_turn_icon.png")]
+    pub end_turn_icon: Handle<Image>,
 }
