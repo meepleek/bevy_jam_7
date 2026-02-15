@@ -111,6 +111,13 @@ impl Grid {
         self.tile_entities.get(&tile).cloned()
     }
 
+    pub fn get_player_tile(&self) -> Option<Coords> {
+        self.occupied_tiles
+            .iter()
+            .find(|(tile, obj)| obj.kind == TileObjectKind::Player)
+            .map(|(tile, _)| *tile)
+    }
+
     pub fn get_tile_object(&self, coords: Coords) -> Option<TileObject> {
         self.occupied_tiles.get(&coords).cloned()
     }

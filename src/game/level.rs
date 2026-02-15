@@ -142,9 +142,8 @@ fn spawn_player(mut cmd: Commands, grid: Single<&Grid>) {
     ));
 }
 
-fn spawn_ui(mut cmd: Commands, sprites: Res<Sprites>, temp: Res<Temp>) {
-    // todo: pass in heat
-    cmd.spawn(thermometer(&sprites, &temp, 1, COL_ORANGE));
+fn spawn_ui(mut cmd: Commands, sprites: Res<Sprites>, temp: Res<Temp>, heat: Res<Heat>) {
+    cmd.spawn(thermometer(&sprites, &temp, heat.0, COL_ORANGE));
     cmd.spawn(end_turn_btn(&sprites));
 }
 

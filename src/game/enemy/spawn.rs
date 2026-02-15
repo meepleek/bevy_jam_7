@@ -9,7 +9,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_observer(on_enemy_added)
         .add_observer(on_enemy_removed)
         .add_systems(OnEnter(Gameplay), reinit_resource::<EnemyStats>)
-        .add_systems(OnEnter(TurnOrder::Ai), on_ai_turn);
+        .add_systems(OnEnter(TurnOrder::Player), on_player_turn);
 }
 
 #[derive(Resource, Deref, DerefMut, Debug, Default)]
@@ -40,9 +40,17 @@ fn on_enemy_removed(
     }
 }
 
-fn on_ai_turn(enemies: ResMut<Enemies>, heat: Res<Heat>) {
+fn on_player_turn(
+    mut cmd: Commands,
+    enemies: ResMut<Enemies>,
+    heat: Res<Heat>,
+    sprites: Res<Sprites>,
+    grid: Single<&Grid>,
+) {
     if enemies.len() < heat.enemy_max() {
         // spawn a single enemy per turn (max spawns could also be based on heat)
-        tracing::warn!("todo: spawn enemy");
+        let player_tile = or_return!(grid.get_player_tile());
+        let (_, enemy) = or_return!(random_enemy(&sprites, &grid, &[], player_tile, 0));
+        cmd.spawn(enemy);
     }
 }
