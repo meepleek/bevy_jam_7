@@ -10,6 +10,7 @@ mod level;
 mod movement;
 mod pause;
 mod player;
+mod shop;
 mod turn;
 mod ui;
 
@@ -36,6 +37,7 @@ pub(super) fn plugin(app: &mut App) {
         level::plugin,
         heat::plugin,
         movement::plugin,
+        shop::plugin,
         pause::plugin,
         player::plugin,
         enemy::plugin,
@@ -53,6 +55,7 @@ pub enum GameplayPhase {
     #[default]
     LevelSpawn,
     Gameplay,
+    Shop,
     #[allow(dead_code)]
     Win,
     #[allow(dead_code)]

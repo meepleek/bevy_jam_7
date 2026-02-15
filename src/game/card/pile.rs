@@ -5,6 +5,7 @@ use std::num::NonZeroU8;
 use tiny_bail::or_return;
 use tiny_bail::or_return_quiet;
 
+use crate::game::turn::TurnOrder;
 use crate::prelude::*;
 
 #[derive(Component, Debug, Default, Deref, DerefMut)]
@@ -21,7 +22,9 @@ pub(super) fn plugin(app: &mut App) {
         .add_observer(ensure_single_at_most::<CardFocused>);
     app.add_systems(
         Update,
-        reposition_hand_cards.run_if(repeating_after_delay(Duration::from_millis(300))),
+        reposition_hand_cards.run_if(
+            in_state(TurnOrder::Player).and(repeating_after_delay(Duration::from_millis(300))),
+        ),
     );
     app.register_type::<CardsInHand>();
 }

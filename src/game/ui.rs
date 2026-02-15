@@ -175,11 +175,11 @@ pub fn end_turn_btn(sprites: &Sprites) -> impl Bundle {
             COL_RED,
             COL_CARD_BORDER,
             COL_CARD_BORDER_FOCUS,
-            (Sprite {
+            Sprite {
                 image: sprites.end_turn_icon.clone(),
                 color: COL_PURPLE_DARK,
                 ..default()
-            },),
+            },
             end_turn,
         ),
         tween::get_relative_translation_anim(position.truncate(), 400, None),

@@ -63,4 +63,6 @@ pub struct Sprites {
     pub btn_outline_9slice: Handle<Image>,
     #[asset(path = "images/ui/end_turn_icon.png")]
     pub end_turn_icon: Handle<Image>,
+    #[asset(path = "images/ui/tooth.png")]
+    pub tooth_icon: Handle<Image>,
 }

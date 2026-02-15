@@ -114,7 +114,7 @@ impl Grid {
     pub fn get_player_tile(&self) -> Option<Coords> {
         self.occupied_tiles
             .iter()
-            .find(|(tile, obj)| obj.kind == TileObjectKind::Player)
+            .find(|(_, obj)| obj.kind == TileObjectKind::Player)
             .map(|(tile, _)| *tile)
     }
 

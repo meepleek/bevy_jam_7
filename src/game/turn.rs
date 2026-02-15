@@ -2,15 +2,12 @@ use crate::{game::card, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<TurnOrder>()
-        .add_sub_state::<PlayerRoundPhase>()
         .add_systems(
             OnEnter(TurnOrder::Player),
             (fill_hand, show_cards_on_player_turn, restore_on_player_turn),
         )
-        .add_systems(
-            OnEnter(TurnOrder::Ai),
-            (deselect_tile_card, hide_on_ai_turn),
-        )
+        .add_systems(OnEnter(TurnOrder::Ai), (deselect_tile_card,))
+        .add_systems(OnExit(TurnOrder::Player), hide_on_player_end_turn)
         .add_systems(Update, end_turn_on_empty_hand);
 }
 
@@ -21,16 +18,6 @@ pub enum TurnOrder {
     #[default]
     Player,
     Ai,
-}
-
-#[allow(dead_code)]
-#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
-#[source(TurnOrder = TurnOrder::Player)]
-pub enum PlayerRoundPhase {
-    #[default]
-    CardSelection,
-    CardEffect,
-    Cleanup,
 }
 
 #[derive(Component)]
@@ -117,7 +104,7 @@ fn deselect_tile_card(
     }
 }
 
-fn hide_on_ai_turn(mut cmd: Commands, hide_q: Query<(Entity, &HideOnAiTurn, &Transform)>) {
+fn hide_on_player_end_turn(mut cmd: Commands, hide_q: Query<(Entity, &HideOnAiTurn, &Transform)>) {
     for (e, hide, hide_t) in hide_q {
         let pos = hide_t.translation;
         let new_pos = match hide {

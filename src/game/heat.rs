@@ -15,9 +15,10 @@ impl Default for Heat {
 }
 impl Heat {
     pub fn target_kill_count(&self) -> usize {
-        let base = 3;
-        let increase = 2;
-        base + self.0 as usize * increase
+        1
+        // let base = 3;
+        // let increase = 2;
+        // base + self.0 as usize * increase
     }
 
     pub fn enemy_max(&self) -> usize {

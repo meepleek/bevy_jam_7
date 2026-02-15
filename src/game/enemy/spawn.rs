@@ -29,13 +29,14 @@ fn on_enemy_removed(
     mut enemies: ResMut<Enemies>,
     mut stats: ResMut<EnemyStats>,
     heat: Res<Heat>,
+    mut next_phase: ResMut<NextState<GameplayPhase>>,
 ) {
     if let Some(i) = enemies.iter().position(|e| *e == ev.entity) {
         enemies.remove(i);
 
         stats.kill_count += 1;
         if stats.kill_count >= heat.target_kill_count() {
-            tracing::warn!("shop pls!");
+            next_phase.set(GameplayPhase::Shop);
         }
     }
 }
