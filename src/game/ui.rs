@@ -1,4 +1,5 @@
 use bevy::{ecs::system::IntoObserverSystem, ui::InteractionDisabled};
+use bevy_tweening::Animator;
 
 use crate::{
     game::turn::TurnOrder,
@@ -164,7 +165,7 @@ fn disable_end_turn_button(btn: Single<Entity, With<EndTurnButton>>, mut cmd: Co
     or_return!(cmd.get_entity(*btn)).insert(InteractionDisabled);
 }
 
-pub fn end_turn_btn(sprites: &Sprites) -> impl Bundle {
+pub fn end_turn_btn(sprites: &Sprites, tween_delay_ms: u64) -> impl Bundle {
     let position = Vec3::new(450., 110., 1.);
     (
         Name::new("end_turn_btn"),
@@ -186,7 +187,10 @@ pub fn end_turn_btn(sprites: &Sprites) -> impl Bundle {
             },
             end_turn,
         ),
-        tween::get_relative_translation_anim(position.truncate(), 400, None),
+        Animator::new(tween::delay_tween(
+            tween::get_relative_translation_tween(position.truncate(), 400, None),
+            tween_delay_ms,
+        )),
     )
 }
 

@@ -20,9 +20,9 @@ pub(super) fn plugin(app: &mut App) {
         (max_grid_size * max_grid_size) as u64 * TILE_TWEEN_STAGGER_MS + TILE_TWEEN_DURATION_MS;
     let grid_delay = initial_delay_ms;
     let ui_delay = initial_delay_ms + grid_tweening_ms / 2; // start mid grid tweening
-    let enemies_delay = grid_delay + grid_tweening_ms + 200;
-    let player_delay = enemies_delay + 1_000;
-    let decks_delay = player_delay + 1_000;
+    let enemies_delay = grid_delay + grid_tweening_ms - 100;
+    let player_delay = enemies_delay + 100;
+    let decks_delay = player_delay + 200;
 
     app.add_systems(
         Update,
@@ -144,7 +144,7 @@ fn spawn_player(mut cmd: Commands, grid: Single<&Grid>) {
 
 fn spawn_ui(mut cmd: Commands, sprites: Res<Sprites>, temp: Res<Temp>, heat: Res<Heat>) {
     cmd.spawn(thermometer(&sprites, &temp, heat.0, COL_ORANGE));
-    cmd.spawn(end_turn_btn(&sprites));
+    cmd.spawn(end_turn_btn(&sprites, 5_000));
 }
 
 fn spawn_decks(mut cmd: Commands, mut next_phase: ResMut<NextState<GameplayPhase>>) {
