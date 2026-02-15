@@ -45,10 +45,7 @@ pub(super) fn plugin(app: &mut App) {
         card::plugin,
         turn::plugin,
         ui::plugin,
-        HideOnStatePlugin::<GameplayPhase> {
-            hide_on_exit_states: vec![GameplayPhase::Shop],
-            ..default()
-        },
+        HideOnStatePlugin::<GameplayPhase>::default(),
     ))
     .add_sub_state::<GameplayPhase>();
 }

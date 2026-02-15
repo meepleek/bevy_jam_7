@@ -8,8 +8,7 @@ use crate::{
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(GameplayPhase::Shop), show_shop)
-        .add_systems(OnExit(GameplayPhase::Shop), hide_shop);
+    app.add_systems(OnEnter(GameplayPhase::Shop), show_shop);
 }
 
 #[derive(Component)]
@@ -19,8 +18,6 @@ fn show_shop(mut cmd: Commands, sprites: Res<Sprites>, mut cards: Cards) {
     cmd.spawn(shop(&sprites, cards_bundle(&sprites)));
     cards.hide_cards();
 }
-
-fn hide_shop() {}
 
 pub fn shop(sprites: &Sprites, content: impl Bundle) -> impl Bundle {
     let size = Vec2::new(1000., 660.);
@@ -78,7 +75,8 @@ pub fn shop(sprites: &Sprites, content: impl Bundle) -> impl Bundle {
             ))
         ],
         tween::get_relative_translation_anim(pos.truncate(), 500, Some(EaseFunction::BackOut)),
-        HideOnStateChange::<GameplayPhase>::new(HideTween::AbsoluteY(-600.)).with_despawn(),
+        HideOnStateChange::hide_on_exit(HideTween::AbsoluteY(-600.), GameplayPhase::Shop)
+            .with_despawn(),
     )
 }
 
