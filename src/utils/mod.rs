@@ -9,6 +9,7 @@ pub mod initial;
 pub mod math;
 pub mod observer;
 pub mod relationship;
+pub mod state;
 
 pub fn plugin(app: &mut App) {
     app.add_plugins((bundle_effect::plugin, initial::plugin));

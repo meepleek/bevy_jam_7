@@ -1,9 +1,12 @@
 use bevy::{ecs::system::IntoObserverSystem, ui::InteractionDisabled};
 
 use crate::{
-    game::turn::{HideOnAiTurn, TurnOrder},
+    game::turn::TurnOrder,
     prelude::*,
-    utils::bundle_effect::BundleEffect,
+    utils::{
+        bundle_effect::BundleEffect,
+        state::{HideOnStateChange, HideTween},
+    },
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -166,7 +169,7 @@ pub fn end_turn_btn(sprites: &Sprites) -> impl Bundle {
     (
         Name::new("end_turn_btn"),
         EndTurnButton,
-        HideOnAiTurn::AbsoluteX(800.),
+        HideOnStateChange::<TurnOrder>::new(HideTween::AbsoluteX(800.)),
         press_game_btn_base(
             &sprites,
             position.with_x(800.),
@@ -376,8 +379,9 @@ fn tick_btns(
 fn handle_next_turn_pointer_hover(
     _ev: On<Pointer<Over>>,
     mut cards: Cards,
-    turn_order: Res<State<TurnOrder>>,
+    turn_order: Option<Res<State<TurnOrder>>>,
 ) {
+    let turn_order = or_return_quiet!(turn_order);
     if *turn_order.get() == TurnOrder::Player {
         cards.hide_cards();
     }
@@ -386,8 +390,9 @@ fn handle_next_turn_pointer_hover(
 fn handle_next_turn_pointer_out(
     _ev: On<Pointer<Out>>,
     mut cards: Cards,
-    turn_order: Res<State<TurnOrder>>,
+    turn_order: Option<Res<State<TurnOrder>>>,
 ) {
+    let turn_order = or_return_quiet!(turn_order);
     if *turn_order.get() == TurnOrder::Player {
         cards.show_cards();
     }

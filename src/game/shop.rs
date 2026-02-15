@@ -1,18 +1,32 @@
-use crate::{game::ui::press_game_btn_base, prelude::*, utils::bundle_effect::BundleEffect};
+use crate::{
+    game::ui::{GameButtonFired, press_game_btn_base},
+    prelude::*,
+    utils::{
+        bundle_effect::BundleEffect,
+        state::{HideOnStateChange, HideTween},
+    },
+};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(GameplayPhase::Shop), show_shop);
+    app.add_systems(OnEnter(GameplayPhase::Shop), show_shop)
+        .add_systems(OnExit(GameplayPhase::Shop), hide_shop);
 }
+
+#[derive(Component)]
+struct Shop;
 
 fn show_shop(mut cmd: Commands, sprites: Res<Sprites>, mut cards: Cards) {
     cmd.spawn(shop(&sprites, cards_bundle(&sprites)));
     cards.hide_cards();
 }
 
+fn hide_shop() {}
+
 pub fn shop(sprites: &Sprites, content: impl Bundle) -> impl Bundle {
     let size = Vec2::new(1000., 660.);
     let pos = Vec3::new(80., 0., 10.);
     (
+        Shop,
         Sprite {
             image: sprites.btn_inner_9slice.clone(),
             image_mode: SpriteImageMode::Sliced(TextureSlicer {
@@ -45,9 +59,9 @@ pub fn shop(sprites: &Sprites, content: impl Bundle) -> impl Bundle {
                 Vec3::new(0., -210., 0.1),
                 Vec2::new(140., 100.),
                 COL_LIGHT,
-                COL_YELLOW,
-                COL_BLUE,
                 COL_BLUE_DARK,
+                COL_BLUE,
+                COL_YELLOW,
                 (
                     Transform::default(),
                     Visibility::default(),
@@ -60,11 +74,17 @@ pub fn shop(sprites: &Sprites, content: impl Bundle) -> impl Bundle {
                         Transform::from_xyz(0., 0., 0.1),
                     )]
                 ),
-                |_: On<_>| {}
+                exit_shop
             ))
         ],
         tween::get_relative_translation_anim(pos.truncate(), 500, Some(EaseFunction::BackOut)),
+        HideOnStateChange::<GameplayPhase>::new(HideTween::AbsoluteY(-600.)).with_despawn(),
     )
+}
+
+fn exit_shop(_ev: On<GameButtonFired>, mut next_phase: ResMut<NextState<GameplayPhase>>) {
+    tracing::warn!("byeee shop");
+    next_phase.set(GameplayPhase::LevelSpawn);
 }
 
 fn cards_bundle(sprites: &Sprites) -> impl Bundle {

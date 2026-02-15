@@ -1,6 +1,6 @@
 use bevy::{math::I16Vec2, prelude::*};
 
-use crate::game::pause::Gameplay;
+use crate::{game::pause::Gameplay, utils::state::HideOnStatePlugin};
 
 mod card;
 mod enemy;
@@ -45,6 +45,10 @@ pub(super) fn plugin(app: &mut App) {
         card::plugin,
         turn::plugin,
         ui::plugin,
+        HideOnStatePlugin::<GameplayPhase> {
+            hide_on_exit_states: vec![GameplayPhase::Shop],
+            ..default()
+        },
     ))
     .add_sub_state::<GameplayPhase>();
 }
