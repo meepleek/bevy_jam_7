@@ -5,9 +5,12 @@ pub(super) fn plugin(app: &mut App) {
         .add_sub_state::<PlayerRoundPhase>()
         .add_systems(
             OnEnter(TurnOrder::Player),
-            (fill_hand, show_cards_on_player_turn),
+            (fill_hand, show_cards_on_player_turn, restore_on_player_turn),
         )
-        .add_systems(OnEnter(TurnOrder::Ai), deselect_tile_card)
+        .add_systems(
+            OnEnter(TurnOrder::Ai),
+            (deselect_tile_card, hide_on_ai_turn),
+        )
         .add_systems(Update, end_turn_on_empty_hand);
 }
 
@@ -28,6 +31,20 @@ pub enum PlayerRoundPhase {
     CardSelection,
     CardEffect,
     Cleanup,
+}
+
+#[derive(Component)]
+struct RestoreValueOnPlayerTurn(Vec3);
+
+#[derive(Component)]
+pub enum HideOnAiTurn {
+    AbsoluteX(f32),
+    #[expect(dead_code)]
+    RelativeX(f32),
+    #[expect(dead_code)]
+    AbsoluteY(f32),
+    #[expect(dead_code)]
+    RelativeY(f32),
 }
 
 fn end_turn_on_empty_hand(
@@ -97,5 +114,36 @@ fn deselect_tile_card(
 ) {
     for selected_card_e in &selected_tile_card_q {
         or_return!(cmd.get_entity(selected_card_e)).try_remove::<SelectedTileTriggerCard>();
+    }
+}
+
+fn hide_on_ai_turn(mut cmd: Commands, hide_q: Query<(Entity, &HideOnAiTurn, &Transform)>) {
+    for (e, hide, hide_t) in hide_q {
+        let pos = hide_t.translation;
+        let new_pos = match hide {
+            HideOnAiTurn::AbsoluteX(x) => pos.with_x(*x),
+            HideOnAiTurn::RelativeX(x) => pos.with_x(pos.x + x),
+            HideOnAiTurn::AbsoluteY(y) => pos.with_y(*y),
+            HideOnAiTurn::RelativeY(y) => pos.with_y(pos.y + y),
+        };
+        or_continue!(cmd.get_entity(e)).try_insert((
+            RestoreValueOnPlayerTurn(pos),
+            tween::get_relative_translation_anim(new_pos.truncate(), 300, None),
+        ));
+    }
+}
+
+fn restore_on_player_turn(
+    mut cmd: Commands,
+    restore_q: Query<(Entity, &RestoreValueOnPlayerTurn)>,
+) {
+    for (e, restore) in restore_q {
+        or_continue!(cmd.get_entity(e))
+            .try_insert((tween::get_relative_translation_anim(
+                restore.0.truncate(),
+                300,
+                None,
+            ),))
+            .try_remove::<RestoreValueOnPlayerTurn>();
     }
 }

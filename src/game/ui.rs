@@ -1,6 +1,10 @@
 use bevy::{ecs::system::IntoObserverSystem, ui::InteractionDisabled};
 
-use crate::{game::turn::TurnOrder, prelude::*, utils::bundle_effect::BundleEffect};
+use crate::{
+    game::turn::{HideOnAiTurn, TurnOrder},
+    prelude::*,
+    utils::bundle_effect::BundleEffect,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(TurnOrder::Ai), disable_end_turn_button)
@@ -162,6 +166,7 @@ pub fn end_turn_btn(sprites: &Sprites) -> impl Bundle {
     (
         Name::new("end_turn_btn"),
         EndTurnButton,
+        HideOnAiTurn::AbsoluteX(800.),
         press_game_btn_base(
             &sprites,
             position.with_x(800.),
