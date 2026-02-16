@@ -29,14 +29,18 @@ fn on_enemy_removed(
     mut enemies: ResMut<Enemies>,
     mut stats: ResMut<EnemyStats>,
     heat: Res<Heat>,
+    current_phase: Res<State<GameplayPhase>>,
     mut next_phase: ResMut<NextState<GameplayPhase>>,
 ) {
     if let Some(i) = enemies.iter().position(|e| *e == ev.entity) {
         enemies.remove(i);
 
-        stats.kill_count += 1;
-        if stats.kill_count >= heat.target_kill_count() {
-            next_phase.set(GameplayPhase::Shop);
+        // this can be trigerred by cleanup as well, so check the state to filter those out
+        if current_phase.get() == &GameplayPhase::Gameplay {
+            stats.kill_count += 1;
+            if stats.kill_count >= heat.target_kill_count() {
+                next_phase.set(GameplayPhase::Shop);
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ use crate::{
     prelude::*,
     utils::{
         bundle_effect::BundleEffect,
+        fade_state::FadeStates,
         state::{HideOnStateChange, HideTween},
     },
 };
@@ -80,9 +81,9 @@ pub fn shop(sprites: &Sprites, content: impl Bundle) -> impl Bundle {
     )
 }
 
-fn exit_shop(_ev: On<GameButtonFired>, mut next_phase: ResMut<NextState<GameplayPhase>>) {
+fn exit_shop(_ev: On<GameButtonFired>, mut fade: FadeStates<GameplayPhase>) {
     tracing::warn!("byeee shop");
-    next_phase.set(GameplayPhase::LevelSpawn);
+    fade.set_with_delay(GameplayPhase::LevelSpawn, 500, 500);
 }
 
 fn cards_bundle(sprites: &Sprites) -> impl Bundle {

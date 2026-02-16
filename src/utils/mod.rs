@@ -5,6 +5,7 @@ use bevy::prelude::*;
 pub mod bundle_effect;
 pub mod ecs;
 pub mod extend;
+pub mod fade_state;
 pub mod initial;
 pub mod math;
 pub mod observer;
@@ -19,6 +20,10 @@ pub fn plugin(app: &mut App) {
 pub mod prelude {
     pub use super::ecs::*;
     pub use super::extend::prelude::*;
+    pub use super::fade_state;
+    pub use super::fade_state::{
+        OnEnterFadingFrom, OnEnterFadingTo, OnExitFadingFrom, OnExitFadingTo,
+    };
     pub use super::initial::Initial;
     pub use super::observer::*;
     pub use super::relationship::*;

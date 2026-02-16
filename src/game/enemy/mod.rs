@@ -210,14 +210,15 @@ pub fn random_enemy(
 ) -> Option<(Coords, impl Bundle)> {
     let mut rng = rng();
     let mut extra_invalid_cords: HashSet<_> = extra_invalid_cords.iter().copied().collect();
-    let player_blocked_tiles = EffectTarget {
+    extra_invalid_cords.insert(player_tile);
+    let blocked_tiles_surrounding_player = EffectTarget {
         reach: EffectReach::Range(1),
         direction: EffectDirection::Area,
     }
     .target_tiles()
     .into_iter()
     .map(|t| t + player_tile);
-    extra_invalid_cords.extend(player_blocked_tiles);
+    extra_invalid_cords.extend(blocked_tiles_surrounding_player);
     let tile = grid
         .iter_tiles()
         .filter(|tile| !extra_invalid_cords.contains(tile) && grid.get_tile_object(*tile).is_none())
@@ -285,6 +286,7 @@ fn enemy_base(sprites: &Sprites, pos: Vec3, i: usize) -> impl Bundle {
     (
         Enemy,
         TileObjectKind::Enemy,
+        RespawnOnLevelReset,
         Transform::from_translation(pos).with_scale(Vec2::ZERO.extend(1.)),
         Visibility::default(),
         Animator::new(tween::delay_tween(

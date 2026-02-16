@@ -58,7 +58,18 @@ pub(super) fn plugin(app: &mut App) {
             in_state(GameplayPhase::LevelSpawn)
                 .and(once_after_delay(Duration::from_millis(decks_delay))),
         ),
-    );
+    )
+    .add_systems(OnEnterFadingTo(GameplayPhase::LevelSpawn), despawn_level);
+}
+
+#[derive(Component)]
+pub struct RespawnOnLevelReset;
+
+fn despawn_level(mut cmd: Commands, respawn_q: Query<Entity, With<RespawnOnLevelReset>>) {
+    tracing::warn!("despawning lvl stuff");
+    for e in respawn_q {
+        or_continue!(cmd.get_entity(e)).try_despawn();
+    }
 }
 
 pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>, heat: Res<Heat>) {
@@ -66,6 +77,7 @@ pub fn spawn_grid(mut cmd: Commands, sprites: Res<Sprites>, heat: Res<Heat>) {
     let grid = Grid::new(grid_size.x, grid_size.y);
     cmd.spawn((
         Name::new("grid"),
+        RespawnOnLevelReset,
         Transform::from_translation(Vec3::Y * 105.),
         Visibility::default(),
     ))
@@ -128,6 +140,7 @@ fn spawn_enemies(mut cmd: Commands, grid: Single<&Grid>, sprites: Res<Sprites>, 
 fn spawn_player(mut cmd: Commands, grid: Single<&Grid>) {
     cmd.spawn((
         Player,
+        RespawnOnLevelReset,
         Movement::default(),
         Transform::from_translation(
             grid.tile_to_world(grid.start_player_tile())

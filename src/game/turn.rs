@@ -1,14 +1,21 @@
-use crate::{game::card, prelude::*, utils::state::HideOnStatePlugin};
+use crate::{
+    game::card,
+    prelude::*,
+    utils::{fade_state::FadeStatePlugin, state::HideOnStatePlugin},
+};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins(HideOnStatePlugin::<TurnOrder>::default())
-        .add_sub_state::<TurnOrder>()
-        .add_systems(
-            OnEnter(TurnOrder::Player),
-            (fill_hand, show_cards_on_player_turn),
-        )
-        .add_systems(OnEnter(TurnOrder::Ai), (deselect_tile_card,))
-        .add_systems(Update, end_turn_on_empty_hand);
+    app.add_plugins((
+        HideOnStatePlugin::<TurnOrder>::default(),
+        FadeStatePlugin::<TurnOrder>::default(),
+    ))
+    .add_sub_state::<TurnOrder>()
+    .add_systems(
+        OnEnter(TurnOrder::Player),
+        (fill_hand, show_cards_on_player_turn),
+    )
+    .add_systems(OnEnter(TurnOrder::Ai), (deselect_tile_card,))
+    .add_systems(Update, end_turn_on_empty_hand);
 }
 
 #[allow(dead_code)]

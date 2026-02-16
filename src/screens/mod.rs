@@ -3,9 +3,15 @@ mod splash;
 
 use bevy::prelude::*;
 
+use crate::utils::fade_state::FadeStatePlugin;
+
 pub(super) fn plugin(app: &mut App) {
     app.init_state::<Screen>();
-    app.add_plugins((splash::plugin, bg::plugin));
+    app.add_plugins((
+        splash::plugin,
+        bg::plugin,
+        FadeStatePlugin::<Screen>::default(),
+    ));
 }
 
 #[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]

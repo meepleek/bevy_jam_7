@@ -172,6 +172,7 @@ pub fn end_turn_btn(sprites: &Sprites, tween_delay_ms: u64) -> impl Bundle {
         EndTurnButton,
         HideOnStateChange::restore_on_enter(HideTween::AbsoluteX(800.), TurnOrder::Player)
             .with_hide_on_exit(TurnOrder::Player),
+        HideOnStateChange::hide_on_exit(HideTween::AbsoluteX(800.), GameplayPhase::Gameplay),
         press_game_btn_base(
             &sprites,
             position.with_x(800.),
